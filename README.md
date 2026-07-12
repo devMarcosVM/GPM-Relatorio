@@ -1,36 +1,96 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Relatório de Serviços
 
-## Getting Started
+Sistema web (PWA) para criação de relatórios de serviço com fotos antes/depois e orçamentos automáticos. Desenvolvido para empresas de desentupimento, jateamento e sucção.
 
-First, run the development server:
+## Funcionalidades
+
+- **Relatórios de serviço** com fotos antes/depois por item
+- **Captura de câmera** direto no navegador (sem salvar na galeria)
+- **Guia de orientação** horizontal/vertical por tipo de serviço
+- **Orçamentos automáticos** com cálculo de preços e PDF
+- **Assinatura digital** do técnico e cliente
+- **Painel administrativo** para escritório
+- **PWA instalável** no celular
+- **Envio por WhatsApp** com link do PDF
+
+## Stack
+
+- Next.js 16 + TypeScript
+- Tailwind CSS
+- Prisma + SQLite (dev) / PostgreSQL (prod)
+- @react-pdf/renderer
+- browser-image-compression
+
+## Início Rápido
 
 ```bash
+# Instalar dependências
+npm install
+
+# Configurar banco de dados e dados iniciais
+npm run db:setup
+
+# Iniciar servidor de desenvolvimento
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Acesse [http://localhost:3000](http://localhost:3000)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Usuários de demonstração
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Papel | E-mail | Senha |
+|-------|--------|-------|
+| Admin (escritório) | admin@empresa.com | admin123 |
+| Técnico (campo) | tecnico@empresa.com | tecnico123 |
 
-## Learn More
+## Estrutura
 
-To learn more about Next.js, take a look at the following resources:
+```
+app/
+  campo/          # Telas mobile para técnicos
+  admin/          # Painel administrativo
+  api/            # API routes
+  login/          # Autenticação
+components/
+  camera/         # Captura de fotos
+  pdf/            # Templates PDF
+  ui/             # Componentes de interface
+lib/              # Utilitários, auth, storage
+prisma/           # Schema e seed do banco
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Deploy na Vercel
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Guia completo Supabase: **[docs/SUPABASE.md](docs/SUPABASE.md)**
 
-## Deploy on Vercel
+1. Faça push do projeto para o GitHub
+2. Configure Supabase (PostgreSQL + bucket `relatorio-fotos`)
+3. Rode `npm run db:supabase` com as credenciais no `.env`
+4. Importe no [Vercel](https://vercel.com) e configure as variáveis de ambiente
+5. Deploy automático
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### Gestão de usuários
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Admin → **Usuários** — criar/editar técnicos e administradores, alterar senhas.
+
+### Personalizar empresa
+
+Cadastre e edite em **Admin → Configurações** — razão social, CNPJ, endereço, telefone, e-mail e logo.
+
+Sem Supabase, as fotos ficam em `public/uploads/` localmente.
+
+## Fluxo do Técnico
+
+1. Login → Home
+2. Novo Relatório → Seleciona cliente
+3. Adiciona serviços do catálogo
+4. Tira foto ANTES e DEPOIS de cada serviço
+5. Assina e finaliza
+6. Baixa PDF ou envia por WhatsApp
+
+## Fluxo do Admin
+
+1. Configura dados da empresa
+2. Cadastra clientes e catálogo de serviços com preços
+3. Acompanha relatórios e orçamentos no dashboard
+4. Aprova/recusa orçamentos

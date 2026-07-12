@@ -1,0 +1,126 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id         String      @id @default(cuid())
+  email      String      @unique
+  password   String
+  nome       String
+  role       String      @default("TECNICO")
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  relatorios Relatorio[]
+  orcamentos Orcamento[]
+}
+
+model Empresa {
+  id          String   @id @default(cuid())
+  razaoSocial String
+  cnpj        String
+  endereco    String
+  telefone    String
+  email       String
+  logoUrl     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Cliente {
+  id         String      @id @default(cuid())
+  nome       String
+  documento  String?
+  telefone   String?
+  email      String?
+  endereco   String?
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  relatorios Relatorio[]
+  orcamentos Orcamento[]
+}
+
+model CatalogoServico {
+  id             String          @id @default(cuid())
+  nome           String
+  descricao      String?
+  preco          Float           @default(0)
+  orientacaoFoto String          @default("VERTICAL")
+  ativo          Boolean         @default(true)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  relatorioItens RelatorioItem[]
+  orcamentoItens OrcamentoItem[]
+}
+
+model Relatorio {
+  id                String          @id @default(cuid())
+  numero            Int             @unique
+  status            String          @default("RASCUNHO")
+  enderecoServico   String?
+  dataInicio        DateTime        @default(now())
+  dataFim           DateTime?
+  observacoes       String?
+  assinaturaTecnico String?
+  assinaturaCliente String?
+  clienteId         String?
+  cliente           Cliente?        @relation(fields: [clienteId], references: [id])
+  tecnicoId         String
+  tecnico           User            @relation(fields: [tecnicoId], references: [id])
+  itens             RelatorioItem[]
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+}
+
+model RelatorioItem {
+  id          String          @id @default(cuid())
+  relatorioId String
+  relatorio   Relatorio       @relation(fields: [relatorioId], references: [id], onDelete: Cascade)
+  servicoId   String
+  servico     CatalogoServico @relation(fields: [servicoId], references: [id])
+  observacoes String?
+  ordem       Int             @default(0)
+  fotos       Foto[]
+}
+
+model Foto {
+  id              String        @id @default(cuid())
+  relatorioItemId String
+  relatorioItem   RelatorioItem @relation(fields: [relatorioItemId], references: [id], onDelete: Cascade)
+  tipo            String
+  url             String
+  orientacao      String
+  createdAt       DateTime      @default(now())
+}
+
+model Orcamento {
+  id             String          @id @default(cuid())
+  numero         Int             @unique
+  status         String          @default("PENDENTE")
+  desconto       Float           @default(0)
+  valorFinal     Float?
+  validadeDias   Int             @default(15)
+  formaPagamento String?
+  observacoes    String?
+  clienteId      String
+  cliente        Cliente         @relation(fields: [clienteId], references: [id])
+  criadoPorId    String
+  criadoPor      User            @relation(fields: [criadoPorId], references: [id])
+  itens          OrcamentoItem[]
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+}
+
+model OrcamentoItem {
+  id            String          @id @default(cuid())
+  orcamentoId   String
+  orcamento     Orcamento       @relation(fields: [orcamentoId], references: [id], onDelete: Cascade)
+  servicoId     String
+  servico       CatalogoServico @relation(fields: [servicoId], references: [id])
+  quantidade    Int             @default(1)
+  precoUnitario Float
+}

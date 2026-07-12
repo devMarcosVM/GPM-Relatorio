@@ -1,7 +1,11 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  logging: {
+    incomingRequests: {
+      ignore: [/\/login/, /\/_next/, /\/api\/auth/],
+    },
+  },
 };
 
 export default nextConfig;
