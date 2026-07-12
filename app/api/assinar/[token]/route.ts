@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import {
-  buscarDocumentoPorToken,
-  validarTokenAssinatura,
+  buscarDocumentoPublicoPorToken,
+  erroAssinatura,
 } from "@/lib/assinatura";
 
 export async function GET(
@@ -10,28 +10,13 @@ export async function GET(
   { params }: { params: Promise<{ token: string }> }
 ) {
   const { token } = await params;
-  const doc = await buscarDocumentoPorToken(token);
+  const doc = await buscarDocumentoPublicoPorToken(token);
 
   if (!doc) {
     return NextResponse.json({ error: "Link inválido" }, { status: 404 });
   }
 
-  const bloqueio = validarTokenAssinatura(doc);
-
-  return NextResponse.json({
-    tipo: doc.tipo,
-    numero: doc.numero,
-    clienteNome: doc.cliente.nome,
-    clienteDocumento: doc.cliente.documento,
-    empresaNome: doc.empresa?.razaoSocial || "Prestador de Serviço",
-    responsavelNome:
-      doc.tipo === "relatorio" ? doc.tecnico.nome : doc.criadoPor.nome,
-    jaAssinado: !!doc.assinaturaCliente,
-    expirado: bloqueio === "Este link expirou. Solicite um novo link ao prestador de serviço.",
-    total: doc.tipo === "orcamento" ? doc.total : undefined,
-    temAssinaturaTecnico:
-      doc.tipo === "relatorio" ? !!doc.assinaturaTecnico : false,
-  });
+  return NextResponse.json(doc);
 }
 
 export async function POST(
@@ -39,13 +24,13 @@ export async function POST(
   { params }: { params: Promise<{ token: string }> }
 ) {
   const { token } = await params;
-  const doc = await buscarDocumentoPorToken(token);
+  const doc = await buscarDocumentoPublicoPorToken(token);
 
   if (!doc) {
     return NextResponse.json({ error: "Link inválido" }, { status: 404 });
   }
 
-  const bloqueio = validarTokenAssinatura(doc);
+  const bloqueio = erroAssinatura(doc);
   if (bloqueio) {
     return NextResponse.json({ error: bloqueio }, { status: 400 });
   }

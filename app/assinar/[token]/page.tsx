@@ -3,29 +3,18 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { SignaturePad, type SignaturePadRef } from "@/components/SignaturePad";
+import { AssinarDocumentoDetalhes } from "@/components/assinar/AssinarDocumentoDetalhes";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Check, FileText, AlertCircle } from "lucide-react";
-import { formatCurrency } from "@/lib/utils";
-
-interface AssinarInfo {
-  tipo: "relatorio" | "orcamento";
-  numero: number;
-  clienteNome: string;
-  empresaNome: string;
-  responsavelNome: string;
-  jaAssinado: boolean;
-  expirado: boolean;
-  total?: number;
-  temAssinaturaTecnico: boolean;
-}
+import { Check, AlertCircle } from "lucide-react";
+import type { DocumentoAssinaturaPublico } from "@/lib/assinatura";
 
 export default function AssinarPage() {
   const params = useParams();
   const token = params.token as string;
   const assinaturaRef = useRef<SignaturePadRef>(null);
 
-  const [info, setInfo] = useState<AssinarInfo | null>(null);
+  const [info, setInfo] = useState<DocumentoAssinaturaPublico | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [enviando, setEnviando] = useState(false);
@@ -92,7 +81,7 @@ export default function AssinarPage() {
 
   const titulo =
     info.tipo === "relatorio"
-      ? `Relatório de Serviço #${String(info.numero).padStart(4, "0")}`
+      ? `Relatório #${String(info.numero).padStart(4, "0")}`
       : `Orçamento #${String(info.numero).padStart(4, "0")}`;
 
   if (concluido || info.jaAssinado) {
@@ -104,7 +93,7 @@ export default function AssinarPage() {
           </div>
           <h1 className="text-xl font-bold">Assinatura registrada!</h1>
           <p className="text-sm text-muted">
-            {titulo} — {info.clienteNome}
+            {titulo} — {info.cliente.nome}
           </p>
           <p className="text-sm text-muted">
             Obrigado. O prestador de serviço já pode gerar o documento final.
@@ -129,43 +118,10 @@ export default function AssinarPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-sky-50 to-slate-100 p-4">
-      <div className="mx-auto max-w-lg space-y-4">
-        <Card className="space-y-3 p-5">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
-              <FileText className="h-5 w-5" />
-            </div>
-            <div>
-              <h1 className="font-bold">{titulo}</h1>
-              <p className="text-sm text-muted">{info.empresaNome}</p>
-            </div>
-          </div>
-
-          <div className="rounded-lg bg-slate-50 p-3 text-sm">
-            <p>
-              <strong>Cliente:</strong> {info.clienteNome}
-            </p>
-            <p>
-              <strong>Responsável:</strong> {info.responsavelNome}
-            </p>
-            {info.tipo === "orcamento" && info.total != null && (
-              <p>
-                <strong>Valor:</strong> {formatCurrency(info.total)}
-              </p>
-            )}
-            {info.tipo === "relatorio" && info.temAssinaturaTecnico && (
-              <p className="mt-1 text-xs text-green-700">
-                ✓ Técnico já assinou este documento
-              </p>
-            )}
-          </div>
-
-          <p className="text-sm text-muted">
-            {info.tipo === "relatorio"
-              ? "Confirme o relatório de serviço assinando abaixo."
-              : "Confirme o orçamento assinando abaixo."}
-          </p>
+    <div className="min-h-screen bg-gradient-to-br from-sky-50 to-slate-100 p-4 pb-8">
+      <div className="mx-auto max-w-2xl space-y-4">
+        <Card className="p-5">
+          <AssinarDocumentoDetalhes info={info} />
         </Card>
 
         <Card className="p-5">
