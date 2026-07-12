@@ -29,7 +29,8 @@ export function toAssetPath(url: string): string {
         return `/api/media/${pathname.slice("/uploads/".length)}`;
       }
       if (pathname.startsWith("/api/media/")) return pathname;
-      return pathname;
+      // Supabase / CDN — manter URL completa
+      return url;
     } catch {
       return url;
     }
