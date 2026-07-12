@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth";
-import { normalizeClientePayload, validateCliente } from "@/lib/cliente";
+import { normalizeClientePayload, validateCliente, mensagemDocumentoDuplicado, mensagemErroClienteDuplicado } from "@/lib/cliente";
 
 export async function GET() {
   const session = await getSession();
@@ -30,9 +30,25 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: validationError }, { status: 400 });
   }
 
-  const cliente = await prisma.cliente.create({
-    data: payload,
-  });
+  const duplicado = await mensagemDocumentoDuplicado(
+    payload.documento,
+    payload.documentoDigits
+  );
+  if (duplicado) {
+    return NextResponse.json({ error: duplicado }, { status: 409 });
+  }
 
-  return NextResponse.json(cliente, { status: 201 });
+  try {
+    const cliente = await prisma.cliente.create({
+      data: payload,
+    });
+
+    return NextResponse.json(cliente, { status: 201 });
+  } catch (error) {
+    const msg = mensagemErroClienteDuplicado(error);
+    if (msg) {
+      return NextResponse.json({ error: msg }, { status: 409 });
+    }
+    throw error;
+  }
 }

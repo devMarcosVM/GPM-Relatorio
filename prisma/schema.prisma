@@ -34,16 +34,17 @@ model Empresa {
 }
 
 model Cliente {
-  id         String      @id @default(cuid())
-  nome       String
-  documento  String?
-  telefone   String?
-  email      String?
-  endereco   String?
-  createdAt  DateTime    @default(now())
-  updatedAt  DateTime    @updatedAt
-  relatorios Relatorio[]
-  orcamentos Orcamento[]
+  id              String      @id @default(cuid())
+  nome            String
+  documento       String?
+  documentoDigits String?     @unique
+  telefone        String?
+  email           String?
+  endereco        String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  relatorios      Relatorio[]
+  orcamentos      Orcamento[]
 }
 
 model CatalogoServico {

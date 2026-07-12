@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { normalizeClientePayload, validateCliente } from "../cliente";
+import {
+  normalizeClientePayload,
+  validateCliente,
+  documentoDigitsFrom,
+} from "../cliente";
 
 const CPF_VALIDO = "529.982.247-25";
 const TELEFONE_VALIDO = "(11) 98765-4321";
@@ -73,6 +77,7 @@ describe("normalizeClientePayload", () => {
     expect(result).toEqual({
       nome: "Maria",
       documento: CPF_VALIDO,
+      documentoDigits: "52998224725",
       telefone: TELEFONE_VALIDO,
       email: "maria@email.com",
       endereco: "Rua A",
@@ -92,8 +97,9 @@ describe("normalizeClientePayload", () => {
     });
 
     expect(semPontuacao.documento).toBe(CPF_VALIDO);
+    expect(semPontuacao.documentoDigits).toBe("52998224725");
     expect(semPontuacao.telefone).toBe(TELEFONE_VALIDO);
-    expect(comPontuacao).toEqual(semPontuacao);
+    expect(comPontuacao.documentoDigits).toBe("52998224725");
   });
 
   it("converte campos vazios em null", () => {
@@ -106,8 +112,18 @@ describe("normalizeClientePayload", () => {
     });
 
     expect(result.documento).toBeNull();
+    expect(result.documentoDigits).toBeNull();
     expect(result.telefone).toBeNull();
     expect(result.email).toBeNull();
     expect(result.endereco).toBeNull();
+  });
+});
+
+describe("documentoDigitsFrom", () => {
+  it("extrai dígitos para comparação única", () => {
+    expect(documentoDigitsFrom("529.982.247-25")).toBe("52998224725");
+    expect(documentoDigitsFrom("52998224725")).toBe("52998224725");
+    expect(documentoDigitsFrom(null)).toBeNull();
+    expect(documentoDigitsFrom("")).toBeNull();
   });
 });

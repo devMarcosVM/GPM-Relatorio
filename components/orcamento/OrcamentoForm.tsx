@@ -7,9 +7,14 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select } from "@/components/ui/select";
 import { ClienteSearchSelect } from "@/components/cliente/ClienteSearchSelect";
+import {
+  NovoClienteInline,
+  type ClienteBasico,
+} from "@/components/cliente/NovoClienteInline";
 import { Card } from "@/components/ui/card";
 import { ArrowLeft, Plus, Minus, Trash2, Download, MessageCircle, Copy, Check } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
+import { telefoneParaWhatsApp } from "@/lib/documentosBr";
 import {
   clampQuantidade,
   formatPrecoUnitario,
@@ -30,11 +35,7 @@ import {
 } from "@/lib/assinaturaLink";
 import { copiarLinkAssinatura } from "@/lib/shareAssinatura";
 
-interface Cliente {
-  id: string;
-  nome: string;
-  telefone?: string | null;
-}
+interface Cliente extends ClienteBasico {}
 
 interface Servico {
   id: string;
@@ -303,7 +304,7 @@ export function OrcamentoForm({ backHref, backLabel = "Voltar" }: OrcamentoFormP
 
   const shareWhatsApp = () => {
     const cliente = clientes.find((c) => c.id === clienteId);
-    const phone = cliente?.telefone?.replace(/\D/g, "") || "";
+    const phone = cliente?.telefone ? telefoneParaWhatsApp(cliente.telefone) : "";
     if (!phone || !tokenAssinatura || !cliente) return;
 
     const texto = buildAssinaturaWhatsAppMessage({
@@ -380,6 +381,12 @@ export function OrcamentoForm({ backHref, backLabel = "Voltar" }: OrcamentoFormP
             value={clienteId}
             onChange={setClienteId}
             placeholder="Buscar por nome, telefone ou documento..."
+          />
+          <NovoClienteInline
+            onCreated={(cliente) => {
+              setClientes((prev) => [...prev, cliente]);
+              setClienteId(cliente.id);
+            }}
           />
         </div>
       </Card>

@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Select } from "@/components/ui/select";
 import { ClienteSearchSelect } from "@/components/cliente/ClienteSearchSelect";
+import { NovoClienteInline } from "@/components/cliente/NovoClienteInline";
 import { CameraCapture } from "@/components/camera/CameraCapture";
 import { SignaturePad, type SignaturePadRef } from "@/components/SignaturePad";
 import {
@@ -24,7 +25,7 @@ import {
 import type { OrientacaoFoto, TipoFoto } from "@/lib/types";
 import { toAssetPath } from "@/lib/assetUrl";
 import { buildAssinaturaWhatsAppMessage } from "@/lib/assinaturaLink";
-import { formatDocumento, formatTelefone, telefoneParaWhatsApp } from "@/lib/documentosBr";
+import { telefoneParaWhatsApp } from "@/lib/documentosBr";
 
 interface Cliente {
   id: string;
@@ -75,13 +76,6 @@ export default function RelatorioDetailPage() {
   const [selectedServico, setSelectedServico] = useState("");
   const [clienteId, setClienteId] = useState("");
   const [enderecoServico, setEnderecoServico] = useState("");
-  const [showNewCliente, setShowNewCliente] = useState(false);
-  const [newCliente, setNewCliente] = useState({
-    nome: "",
-    documento: "",
-    telefone: "",
-    endereco: "",
-  });
   const [camera, setCamera] = useState<{
     itemId: string;
     tipo: TipoFoto;
@@ -93,7 +87,6 @@ export default function RelatorioDetailPage() {
   const [assinaturaCliente, setAssinaturaCliente] = useState<string | null>(null);
   const [observacoes, setObservacoes] = useState("");
   const [error, setError] = useState("");
-  const [clienteFormError, setClienteFormError] = useState("");
   const [finalizando, setFinalizando] = useState(false);
   const assinaturaTecnicoRef = useRef<SignaturePadRef>(null);
   const assinaturaClienteRef = useRef<SignaturePadRef>(null);
@@ -150,28 +143,6 @@ export default function RelatorioDetailPage() {
       orientacao: item.servico.orientacaoFoto as OrientacaoFoto,
       servicoNome: item.servico.nome,
     });
-  };
-
-  const criarCliente = async () => {
-    if (!newCliente.nome.trim()) return;
-    setClienteFormError("");
-
-    const res = await fetch("/api/clientes", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(newCliente),
-    });
-    const cliente = await res.json();
-
-    if (!res.ok) {
-      setClienteFormError(cliente.error || "Erro ao salvar cliente");
-      return;
-    }
-
-    setClientes([...clientes, cliente]);
-    setClienteId(cliente.id);
-    setShowNewCliente(false);
-    setNewCliente({ nome: "", documento: "", telefone: "", endereco: "" });
   };
 
   const finalizar = async () => {
@@ -400,74 +371,13 @@ export default function RelatorioDetailPage() {
                 onChange={setClienteId}
                 placeholder="Buscar cliente por nome, telefone..."
               />
-              <button
-                type="button"
-                onClick={() => setShowNewCliente(!showNewCliente)}
-                className="mt-2 flex items-center gap-1 text-sm text-primary"
-              >
-                <Plus className="h-4 w-4" />
-                Cadastrar novo cliente
-              </button>
+              <NovoClienteInline
+                onCreated={(cliente) => {
+                  setClientes((prev) => [...prev, cliente]);
+                  setClienteId(cliente.id);
+                }}
+              />
             </div>
-
-            {showNewCliente && (
-              <div className="space-y-3 rounded-lg border border-border p-3">
-                <Input
-                  placeholder="Nome / Razão social *"
-                  value={newCliente.nome}
-                  onChange={(e) =>
-                    setNewCliente({ ...newCliente, nome: e.target.value })
-                  }
-                />
-                <Input
-                  placeholder="CPF/CNPJ"
-                  value={newCliente.documento}
-                  onChange={(e) =>
-                    setNewCliente({
-                      ...newCliente,
-                      documento: formatDocumento(e.target.value),
-                    })
-                  }
-                  onBlur={(e) =>
-                    setNewCliente({
-                      ...newCliente,
-                      documento: formatDocumento(e.target.value),
-                    })
-                  }
-                />
-                <Input
-                  placeholder="Telefone"
-                  value={newCliente.telefone}
-                  onChange={(e) =>
-                    setNewCliente({
-                      ...newCliente,
-                      telefone: formatTelefone(e.target.value),
-                    })
-                  }
-                  onBlur={(e) =>
-                    setNewCliente({
-                      ...newCliente,
-                      telefone: formatTelefone(e.target.value),
-                    })
-                  }
-                />
-                <Input
-                  placeholder="Endereço"
-                  value={newCliente.endereco}
-                  onChange={(e) =>
-                    setNewCliente({ ...newCliente, endereco: e.target.value })
-                  }
-                />
-                <Button size="sm" onClick={criarCliente}>
-                  Salvar Cliente
-                </Button>
-                {clienteFormError && (
-                  <p className="text-sm text-red-600" role="alert">
-                    {clienteFormError}
-                  </p>
-                )}
-              </div>
-            )}
 
             <div>
               <label className="mb-1 block text-sm font-medium">
