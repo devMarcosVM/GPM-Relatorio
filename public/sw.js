@@ -1,5 +1,5 @@
-const CACHE_NAME = "relatorio-v2";
-const PRECACHE_URLS = ["/login", "/manifest.json"];
+const CACHE_NAME = "relatorio-v3";
+const PRECACHE_URLS = ["/manifest.json", "/icon.svg"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -17,30 +17,49 @@ self.addEventListener("activate", (event) => {
   self.clients.claim();
 });
 
+self.addEventListener("message", (event) => {
+  if (event.data?.type === "SKIP_WAITING") {
+    self.skipWaiting();
+  }
+});
+
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
-  const url = new URL(event.request.url);
 
-  // Nunca interceptar API, assets do Next ou páginas autenticadas
+  const url = new URL(event.request.url);
+  if (url.origin !== self.location.origin) return;
+
+  // Nunca interceptar API, assets do Next ou uploads
   if (
     url.pathname.startsWith("/api/") ||
     url.pathname.startsWith("/_next/") ||
-    url.pathname.startsWith("/campo") ||
-    url.pathname.startsWith("/admin")
+    url.pathname.startsWith("/uploads/")
   ) {
     return;
   }
 
-  event.respondWith(
-    caches.match(event.request).then((cached) => {
-      if (cached) return cached;
-      return fetch(event.request).then((response) => {
-        if (response.ok && url.origin === self.location.origin) {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
-        }
-        return response;
-      });
-    })
-  );
+  // Páginas HTML sempre vêm da rede (evita CSS/JS desatualizados)
+  if (
+    event.request.mode === "navigate" ||
+    event.request.destination === "document"
+  ) {
+    return;
+  }
+
+  // Cache apenas para ícones/manifest do PWA
+  if (url.pathname === "/manifest.json" || url.pathname === "/icon.svg") {
+    event.respondWith(
+      caches.match(event.request).then(
+        (cached) =>
+          cached ||
+          fetch(event.request).then((response) => {
+            if (response.ok) {
+              const clone = response.clone();
+              caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+            }
+            return response;
+          })
+      )
+    );
+  }
 });

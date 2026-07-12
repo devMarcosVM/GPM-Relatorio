@@ -36,6 +36,18 @@ npm run dev
 
 Acesse [http://localhost:3000](http://localhost:3000)
 
+## Docker
+
+```bash
+# App + PostgreSQL (produção local)
+docker compose up -d --build
+
+# Ou via npm
+npm run docker:up
+```
+
+Guia completo: **[docs/DOCKER.md](docs/DOCKER.md)**
+
 ### Usuários de demonstração
 
 | Papel | E-mail | Senha |
