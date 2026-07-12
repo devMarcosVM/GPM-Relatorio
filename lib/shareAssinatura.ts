@@ -2,6 +2,7 @@ import {
   buildAssinaturaUrl,
   buildAssinaturaWhatsAppMessage,
 } from "./assinaturaLink";
+import { copyToClipboard } from "./utils";
 
 export async function regenerarTokenOrcamento(id: string): Promise<string> {
   const res = await fetch(`/api/orcamentos/${id}/link-assinatura`, {
@@ -35,7 +36,7 @@ export async function obterTokenOrcamento(
 
 export function copiarLinkAssinatura(token: string): Promise<void> {
   const url = buildAssinaturaUrl(token, window.location.origin);
-  return navigator.clipboard.writeText(url);
+  return copyToClipboard(url);
 }
 
 export function enviarWhatsAppAssinatura(opts: {

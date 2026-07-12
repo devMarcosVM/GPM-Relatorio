@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select } from "@/components/ui/select";
 import { ClienteSearchSelect } from "@/components/cliente/ClienteSearchSelect";
 import { Card } from "@/components/ui/card";
-import { ArrowLeft, Plus, Trash2, Download, MessageCircle, Copy } from "lucide-react";
+import { ArrowLeft, Plus, Minus, Trash2, Download, MessageCircle, Copy, Check } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { calcOrcamentoSubtotal, calcOrcamentoTotal, calcDescontoPacote } from "@/lib/orcamento";
 import {
@@ -43,6 +43,36 @@ interface OrcamentoFormProps {
   backLabel?: string;
 }
 
+const FORMAS_PAGAMENTO = [
+  { value: "PIX", label: "PIX" },
+  { value: "DINHEIRO", label: "Dinheiro" },
+  { value: "DEBITO", label: "Cartão de débito" },
+  { value: "CREDITO", label: "Cartão de crédito" },
+  { value: "BOLETO", label: "Boleto" },
+  { value: "TRANSFERENCIA", label: "Transferência bancária" },
+] as const;
+
+type FormaPagamentoTipo = (typeof FORMAS_PAGAMENTO)[number]["value"];
+
+function formatFormaPagamento(tipo: FormaPagamentoTipo | "", parcelas: number): string {
+  switch (tipo) {
+    case "PIX":
+      return "PIX";
+    case "DINHEIRO":
+      return "Dinheiro";
+    case "DEBITO":
+      return "Cartão de débito";
+    case "CREDITO":
+      return `Cartão de crédito — ${parcelas}x`;
+    case "BOLETO":
+      return "Boleto";
+    case "TRANSFERENCIA":
+      return "Transferência bancária";
+    default:
+      return "";
+  }
+}
+
 function parseMoney(value: string) {
   const parsed = parseFloat(value.replace(",", "."));
   return Number.isFinite(parsed) ? Math.max(0, parsed) : 0;
@@ -57,7 +87,8 @@ export function OrcamentoForm({ backHref, backLabel = "Voltar" }: OrcamentoFormP
   const [desconto, setDesconto] = useState(0);
   const [valorFinalPacote, setValorFinalPacote] = useState("");
   const [validadeDias, setValidadeDias] = useState(15);
-  const [formaPagamento, setFormaPagamento] = useState("");
+  const [formaPagamentoTipo, setFormaPagamentoTipo] = useState<FormaPagamentoTipo | "">("");
+  const [parcelasCredito, setParcelasCredito] = useState(1);
   const [observacoes, setObservacoes] = useState("");
   const [loading, setLoading] = useState(false);
   const [orcamentoId, setOrcamentoId] = useState<string | null>(null);
@@ -65,6 +96,7 @@ export function OrcamentoForm({ backHref, backLabel = "Voltar" }: OrcamentoFormP
   const [tokenAssinatura, setTokenAssinatura] = useState<string | null>(null);
   const [totalSalvo, setTotalSalvo] = useState(0);
   const [error, setError] = useState("");
+  const [copyState, setCopyState] = useState<"idle" | "copied" | "error">("idle");
 
   useEffect(() => {
     Promise.all([
@@ -75,6 +107,12 @@ export function OrcamentoForm({ backHref, backLabel = "Voltar" }: OrcamentoFormP
       setServicos(s);
     });
   }, []);
+
+  useEffect(() => {
+    if (copyState === "idle") return;
+    const timeout = setTimeout(() => setCopyState("idle"), 2000);
+    return () => clearTimeout(timeout);
+  }, [copyState]);
 
   const addItem = () => {
     const servico = servicos.find((s) => s.id === selectedServico);
@@ -132,7 +170,7 @@ export function OrcamentoForm({ backHref, backLabel = "Voltar" }: OrcamentoFormP
         desconto: usaPacote ? 0 : desconto,
         valorFinal: usaPacote ? valorFinal : null,
         validadeDias,
-        formaPagamento,
+        formaPagamento: formatFormaPagamento(formaPagamentoTipo, parcelasCredito),
         observacoes,
         itens: itens.map((i) => ({
           servicoId: i.servicoId,
@@ -177,8 +215,12 @@ export function OrcamentoForm({ backHref, backLabel = "Voltar" }: OrcamentoFormP
 
   const copyLink = async () => {
     if (!tokenAssinatura) return;
-    await copiarLinkAssinatura(tokenAssinatura);
-    alert("Link copiado!");
+    try {
+      await copiarLinkAssinatura(tokenAssinatura);
+      setCopyState("copied");
+    } catch {
+      setCopyState("error");
+    }
   };
 
   if (orcamentoId) {
@@ -201,8 +243,16 @@ export function OrcamentoForm({ backHref, backLabel = "Voltar" }: OrcamentoFormP
               Enviar link para cliente assinar
             </Button>
             <Button className="w-full" variant="outline" onClick={copyLink}>
-              <Copy className="h-4 w-4" />
-              Copiar link de assinatura
+              {copyState === "copied" ? (
+                <Check className="h-4 w-4" />
+              ) : (
+                <Copy className="h-4 w-4" />
+              )}
+              {copyState === "copied"
+                ? "Link copiado"
+                : copyState === "error"
+                  ? "Erro ao copiar"
+                  : "Copiar link de assinatura"}
             </Button>
             <p className="text-xs text-muted text-center">
               Também encontra o link em Campo → Orçamentos ou Admin → Orçamentos.
@@ -288,15 +338,38 @@ export function OrcamentoForm({ backHref, backLabel = "Voltar" }: OrcamentoFormP
                   <label className="mb-1 block text-xs font-medium text-muted">
                     Qtd
                   </label>
-                  <Input
-                    type="number"
-                    min={1}
-                    value={item.quantidade}
-                    onChange={(e) =>
-                      updateQuantidade(idx, parseInt(e.target.value) || 1)
-                    }
-                    className="text-center"
-                  />
+                  <div className="flex items-center gap-1">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="h-10 w-10 shrink-0 px-0"
+                      onClick={() => updateQuantidade(idx, item.quantidade - 1)}
+                      disabled={item.quantidade <= 1}
+                      aria-label="Diminuir quantidade"
+                    >
+                      <Minus className="h-4 w-4" />
+                    </Button>
+                    <Input
+                      type="number"
+                      min={1}
+                      value={item.quantidade}
+                      onChange={(e) =>
+                        updateQuantidade(idx, parseInt(e.target.value) || 1)
+                      }
+                      className="text-center"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="h-10 w-10 shrink-0 px-0"
+                      onClick={() => updateQuantidade(idx, item.quantidade + 1)}
+                      aria-label="Aumentar quantidade"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
                 <div>
                   <label className="mb-1 block text-xs font-medium text-muted">
@@ -374,12 +447,39 @@ export function OrcamentoForm({ backHref, backLabel = "Voltar" }: OrcamentoFormP
 
         <div>
           <label className="mb-1 block text-sm font-medium">Forma de pagamento</label>
-          <Input
-            value={formaPagamento}
-            onChange={(e) => setFormaPagamento(e.target.value)}
-            placeholder="Ex: PIX, Boleto, À vista"
-          />
+          <Select
+            value={formaPagamentoTipo}
+            onChange={(e) =>
+              setFormaPagamentoTipo(e.target.value as FormaPagamentoTipo | "")
+            }
+          >
+            <option value="">Selecione...</option>
+            {FORMAS_PAGAMENTO.map((forma) => (
+              <option key={forma.value} value={forma.value}>
+                {forma.label}
+              </option>
+            ))}
+          </Select>
         </div>
+
+        {formaPagamentoTipo === "CREDITO" && (
+          <div>
+            <label className="mb-1 block text-sm font-medium">
+              Parcelas no cartão de crédito
+            </label>
+            <Select
+              value={parcelasCredito}
+              onChange={(e) => setParcelasCredito(parseInt(e.target.value) || 1)}
+              className="max-w-xs"
+            >
+              {Array.from({ length: 12 }, (_, i) => i + 1).map((n) => (
+                <option key={n} value={n}>
+                  {n}x
+                </option>
+              ))}
+            </Select>
+          </div>
+        )}
         <div>
           <label className="mb-1 block text-sm font-medium">Observações</label>
           <Textarea

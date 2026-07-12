@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
 import { ListFilters } from "@/components/admin/ListFilters";
 import Link from "next/link";
-import { Download, Trash2, Plus, MessageCircle, Copy } from "lucide-react";
+import { Download, Trash2, Plus, MessageCircle, Copy, Check } from "lucide-react";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { calcOrcamentoTotal } from "@/lib/orcamento";
 import { isInDateRange, matchesSearch } from "@/lib/adminFilters";
@@ -41,6 +41,8 @@ export default function OrcamentosAdminPage() {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [sharingId, setSharingId] = useState<string | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [copyErrorId, setCopyErrorId] = useState<string | null>(null);
 
   const load = () => {
     fetch("/api/orcamentos")
@@ -51,6 +53,15 @@ export default function OrcamentosAdminPage() {
   useEffect(() => {
     load();
   }, []);
+
+  useEffect(() => {
+    if (!copiedId && !copyErrorId) return;
+    const timeout = setTimeout(() => {
+      setCopiedId(null);
+      setCopyErrorId(null);
+    }, 2000);
+    return () => clearTimeout(timeout);
+  }, [copiedId, copyErrorId]);
 
   const calcTotal = (o: Orcamento) =>
     calcOrcamentoTotal(o.itens, o.desconto, o.valorFinal);
@@ -122,13 +133,15 @@ export default function OrcamentosAdminPage() {
 
   const copyLink = async (o: Orcamento) => {
     setSharingId(o.id);
+    setCopiedId(null);
+    setCopyErrorId(null);
     try {
       const token = await obterTokenOrcamento(o.id, o.tokenAssinatura);
       await copiarLinkAssinatura(token);
-      alert("Link copiado!");
+      setCopiedId(o.id);
       load();
-    } catch (err) {
-      alert(err instanceof Error ? err.message : "Erro ao copiar link");
+    } catch {
+      setCopyErrorId(o.id);
     } finally {
       setSharingId(null);
     }
@@ -229,7 +242,16 @@ export default function OrcamentosAdminPage() {
                         disabled={sharingId === o.id}
                         title="Copiar link de assinatura"
                       >
-                        <Copy className="h-4 w-4" />
+                        {copiedId === o.id ? (
+                          <>
+                            <Check className="h-4 w-4" />
+                            Link copiado
+                          </>
+                        ) : copyErrorId === o.id ? (
+                          "Erro ao copiar"
+                        ) : (
+                          <Copy className="h-4 w-4" />
+                        )}
                       </Button>
                     </>
                   )}

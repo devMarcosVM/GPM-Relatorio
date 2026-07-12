@@ -44,6 +44,7 @@ export default function CampoOrcamentoPage() {
   const [orcamento, setOrcamento] = useState<Orcamento | null>(null);
   const [loading, setLoading] = useState(true);
   const [sharing, setSharing] = useState(false);
+  const [copyState, setCopyState] = useState<"idle" | "copied" | "error">("idle");
 
   const load = () => {
     fetch(`/api/orcamentos/${id}`)
@@ -57,6 +58,12 @@ export default function CampoOrcamentoPage() {
   useEffect(() => {
     load();
   }, [id]);
+
+  useEffect(() => {
+    if (copyState === "idle") return;
+    const timeout = setTimeout(() => setCopyState("idle"), 2000);
+    return () => clearTimeout(timeout);
+  }, [copyState]);
 
   const total = orcamento
     ? calcOrcamentoTotal(orcamento.itens, orcamento.desconto, orcamento.valorFinal)
@@ -93,10 +100,10 @@ export default function CampoOrcamentoPage() {
     try {
       const token = await obterTokenOrcamento(orcamento.id, orcamento.tokenAssinatura);
       await copiarLinkAssinatura(token);
-      alert("Link copiado!");
+      setCopyState("copied");
       load();
-    } catch (err) {
-      alert(err instanceof Error ? err.message : "Erro ao copiar");
+    } catch {
+      setCopyState("error");
     } finally {
       setSharing(false);
     }
@@ -193,8 +200,16 @@ export default function CampoOrcamentoPage() {
                 onClick={copyLink}
                 disabled={sharing}
               >
-                <Copy className="h-4 w-4" />
-                Copiar link de assinatura
+                {copyState === "copied" ? (
+                  <Check className="h-4 w-4" />
+                ) : (
+                  <Copy className="h-4 w-4" />
+                )}
+                {copyState === "copied"
+                  ? "Link copiado"
+                  : copyState === "error"
+                    ? "Erro ao copiar"
+                    : "Copiar link de assinatura"}
               </Button>
               {linkIp && (
                 <p className="text-xs text-amber-700">
