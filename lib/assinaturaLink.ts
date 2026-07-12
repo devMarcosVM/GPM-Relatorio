@@ -33,31 +33,17 @@ export function buildAssinaturaWhatsAppMessage(opts: {
   const num = String(opts.numero).padStart(4, "0");
 
   const lines = [
-    `Ola, ${opts.nomeCliente}!`,
+    `Olá, ${opts.nomeCliente}!`,
     "",
     `${label} #${num}${opts.total ? ` - ${opts.total}` : ""}`,
     "",
     "Assine pelo link:",
     link,
     "",
-    "Se o link nao ficar azul, copie e cole no navegador.",
-    `Valido por ${DIAS_VALIDADE} dias.`,
+    `Válido por ${DIAS_VALIDADE} dias.`,
   ];
 
   return lines.join("\n");
-}
-
-export function isIpUrl(url: string): boolean {
-  try {
-    const host = new URL(url).hostname;
-    return (
-      /^\d{1,3}(\.\d{1,3}){3}$/.test(host) ||
-      host.startsWith("100.") ||
-      host.endsWith(".ts.net")
-    );
-  } catch {
-    return false;
-  }
 }
 
 export function isTokenExpirado(expira: Date | null | undefined): boolean {

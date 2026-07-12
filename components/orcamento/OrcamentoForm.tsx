@@ -27,7 +27,6 @@ import { calcOrcamentoSubtotal, calcOrcamentoTotal, calcDescontoPacote, validate
 import {
   buildAssinaturaUrl,
   buildAssinaturaWhatsAppMessage,
-  isIpUrl,
 } from "@/lib/assinaturaLink";
 import { copiarLinkAssinatura } from "@/lib/shareAssinatura";
 
@@ -360,14 +359,6 @@ export function OrcamentoForm({ backHref, backLabel = "Voltar" }: OrcamentoFormP
                   ? "Erro ao copiar"
                   : "Copiar link de assinatura"}
             </Button>
-            <p className="text-xs text-muted text-center">
-              Também encontra o link em Campo → Orçamentos ou Admin → Orçamentos.
-            </p>
-            {tokenAssinatura && isIpUrl(buildAssinaturaUrl(tokenAssinatura, window.location.origin)) && (
-              <p className="text-xs text-amber-700 text-center">
-                Links com IP podem não ficar azuis no WhatsApp. Use &quot;Copiar link&quot;.
-              </p>
-            )}
             <Link href={backHref}>
               <Button variant="ghost" className="w-full">
                 {backLabel}

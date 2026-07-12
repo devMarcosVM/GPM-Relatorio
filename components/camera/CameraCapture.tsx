@@ -215,12 +215,6 @@ export function CameraCapture({
               <strong>{isVertical ? "vertical" : "horizontal"}</strong>
             </p>
 
-            {!liveCameraAvailable && (
-              <p className="max-w-xs text-center text-xs text-amber-300">
-                Acesso por HTTP (sem HTTPS). Use o botão abaixo — ele abre a câmera nativa do celular.
-              </p>
-            )}
-
             {liveCameraAvailable ? (
               <Button onClick={startCamera} size="lg">
                 <Camera className="h-5 w-5" />

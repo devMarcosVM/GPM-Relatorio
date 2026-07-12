@@ -66,10 +66,10 @@ async function main() {
     }
   }
 
-  console.log("Seed concluído!");
-  console.log("Admin:", admin.email, "/ senha:", env("ADMIN_PASSWORD", "admin123"));
-  console.log("Técnico:", tecnico.email, "/ senha:", env("TECNICO_PASSWORD", "tecnico123"));
-  console.log("Configure a empresa em: Admin → Configurações");
+  console.log("Seed concluído.");
+  console.log("Admin:", admin.email);
+  console.log("Técnico:", tecnico.email);
+  console.log("Configure a empresa em Admin → Configurações.");
 }
 
 main()

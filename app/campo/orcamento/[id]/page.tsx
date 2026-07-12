@@ -24,7 +24,6 @@ import {
   enviarWhatsAppAssinatura,
   obterTokenOrcamento,
 } from "@/lib/shareAssinatura";
-import { isIpUrl, buildAssinaturaUrl } from "@/lib/assinaturaLink";
 
 interface Orcamento {
   id: string;
@@ -134,11 +133,6 @@ export default function CampoOrcamentoPage() {
     );
   }
 
-  const linkAtual = orcamento.tokenAssinatura
-    ? buildAssinaturaUrl(orcamento.tokenAssinatura, window.location.origin)
-    : null;
-  const linkIp = linkAtual ? isIpUrl(linkAtual) : false;
-
   return (
     <div className="min-h-screen bg-slate-50">
       <header className="bg-primary px-4 py-4 text-white">
@@ -218,12 +212,6 @@ export default function CampoOrcamentoPage() {
                     ? "Erro ao copiar"
                     : "Copiar link de assinatura"}
               </Button>
-              {linkIp && (
-                <p className="text-xs text-amber-700">
-                  Links com IP (rede local/Tailscale) podem não ficar azuis no WhatsApp.
-                  Use &quot;Copiar link&quot; se o cliente não conseguir clicar.
-                </p>
-              )}
             </>
           )}
 

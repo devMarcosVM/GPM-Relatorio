@@ -48,12 +48,14 @@ npm run docker:up
 
 Guia completo: **[docs/DOCKER.md](docs/DOCKER.md)**
 
-### Usuários de demonstração
+### Desenvolvimento local
 
-| Papel | E-mail | Senha |
-|-------|--------|-------|
-| Admin (escritório) | admin@empresa.com | admin123 |
-| Técnico (campo) | tecnico@empresa.com | tecnico123 |
+| Papel | E-mail | Senha padrão (altere em produção) |
+|-------|--------|-----------------------------------|
+| Admin | admin@empresa.com | definida em `ADMIN_PASSWORD` no `.env` |
+| Técnico | tecnico@empresa.com | definida em `TECNICO_PASSWORD` no `.env` |
+
+Para produção, use senhas fortes nas variáveis de ambiente da Vercel.
 
 ## Estrutura
 
@@ -71,15 +73,17 @@ lib/              # Utilitários, auth, storage
 prisma/           # Schema e seed do banco
 ```
 
-## Deploy na Vercel
+## Deploy em produção
 
-Guia completo Supabase: **[docs/SUPABASE.md](docs/SUPABASE.md)**
+**Guia completo:** **[docs/VERCEL.md](docs/VERCEL.md)** (Vercel + Supabase, passo a passo)
 
-1. Faça push do projeto para o GitHub
-2. Configure Supabase (PostgreSQL + bucket `relatorio-fotos`)
-3. Rode `npm run db:supabase` com as credenciais no `.env`
-4. Importe no [Vercel](https://vercel.com) e configure as variáveis de ambiente
-5. Deploy automático
+Resumo:
+1. Crie projeto no [Supabase](https://supabase.com) (banco + bucket `relatorio-fotos`)
+2. Rode `npx prisma db push` e `npm run db:seed` com as credenciais no `.env`
+3. Importe o repositório na [Vercel](https://vercel.com) e configure as variáveis de ambiente
+4. Acesse o app, configure empresa em **Admin → Configurações**
+
+Detalhes do Supabase: **[docs/SUPABASE.md](docs/SUPABASE.md)**
 
 ### Gestão de usuários
 
