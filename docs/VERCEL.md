@@ -23,33 +23,48 @@ Guia passo a passo para colocar o app em produção. Não é necessário experi�
 4. Defina uma **senha forte** para o banco — **anote em local seguro**
 5. Região: **South America (São Paulo)** se disponível
 6. Aguarde o projeto ficar pronto (~2 min)
-
+    
 ### 1.2 Copiar credenciais do banco
 
-No painel do Supabase:
+No painel novo do Supabase, as strings de conexão **não** ficam em Settings → Database. Siga assim:
 
-1. Vá em **Project Settings** (ícone de engrenagem) → **Database**
-2. Role até **Connection string** → aba **URI**
-3. Copie a string **Transaction** (porta **6543**) — use no `DATABASE_URL`
-4. Copie a string **Session** (porta **5432**) — use no `DIRECT_URL` (opcional, para migrations)
+1. Abra o projeto (ex.: **Relatorio-GPM**)
+2. No topo da página, clique no botão verde **Connect**
+3. Escolha **ORMs** ou **App Frameworks** (qualquer um mostra as strings)
+4. Copie estas duas:
 
-Substitua `[YOUR-PASSWORD]` pela senha que você criou.
+| String | Porta | Variável no `.env` |
+|--------|-------|-------------------|
+| **Transaction pooler** (ou *Transaction mode*) | **6543** | `DATABASE_URL` |
+| **Session pooler** (ou *Session mode*) | **5432** | `DIRECT_URL` (opcional) |
 
-Exemplo:
+5. Troque `[YOUR-PASSWORD]` pela **senha do banco** que você definiu ao criar o projeto
+
+**Se esqueceu a senha:** Settings (engrenagem) → **Database** (menu lateral) → **Reset database password**
+
+**Seu Project ID** (Settings → General): `pvxmcaasiijltwcbquyp`  
+Host do pooler (copie exatamente do painel **Connect** — pode ser `aws-1-sa-east-1`):
+
+Exemplo (substitua `SUA_SENHA` pela senha do banco):
 ```env
-DATABASE_URL="postgresql://postgres.xxxxx:SUA_SENHA@aws-0-sa-east-1.pooler.supabase.com:6543/postgres?pgbouncer=true"
-DIRECT_URL="postgresql://postgres.xxxxx:SUA_SENHA@aws-0-sa-east-1.pooler.supabase.com:5432/postgres"
+DATABASE_URL="postgresql://postgres.pvxmcaasiijltwcbquyp:SUA_SENHA@aws-1-sa-east-1.pooler.supabase.com:6543/postgres?pgbouncer=true"
+DIRECT_URL="postgresql://postgres.pvxmcaasiijltwcbquyp:SUA_SENHA@aws-1-sa-east-1.pooler.supabase.com:5432/postgres"
 ```
+
+> **Ignore** os passos do painel `npm install prisma` e `npx prisma init` — o projeto **já tem** Prisma configurado.  
+> **Ignore** `supabase link` e Agent Skills — não são necessários.  
+> Basta colar as URLs no `.env` e rodar `npx prisma db push`.
 
 ### 1.3 Copiar chaves da API
 
-Em **Project Settings** → **API**:
+1. Settings (engrenagem no canto inferior esquerdo)
+2. Menu **Configuration** → **API Keys**
 
 | Variável | Onde copiar |
 |----------|-------------|
-| `NEXT_PUBLIC_SUPABASE_URL` | Project URL |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | anon public |
-| `SUPABASE_SERVICE_ROLE_KEY` | service_role (secret) |
+| `NEXT_PUBLIC_SUPABASE_URL` | **Project URL** (ex.: `https://pvxmcaasiijltwcbquyp.supabase.co`) |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Chave **anon** / **public** |
+| `SUPABASE_SERVICE_ROLE_KEY` | Chave **service_role** (secret — não exponha no front) |
 
 ### 1.4 Criar bucket de fotos
 
@@ -64,15 +79,17 @@ Em **Project Settings** → **API**:
 
 ### 2.1 Configurar `.env` local
 
-Copie `.env.example` para `.env` e preencha com os dados do Supabase:
+Edite o `.env` na raiz do projeto (não precisa de `.env.local` — o Prisma lê `.env`):
 
 ```env
-DATABASE_URL="postgresql://postgres.xxxxx:SUA_SENHA@...pooler.supabase.com:6543/postgres?pgbouncer=true"
+# Supabase — cole do painel Connect → ORMs → Prisma
+DATABASE_URL="postgresql://postgres.pvxmcaasiijltwcbquyp:SUA_SENHA@aws-1-sa-east-1.pooler.supabase.com:6543/postgres?pgbouncer=true"
+DIRECT_URL="postgresql://postgres.pvxmcaasiijltwcbquyp:SUA_SENHA@aws-1-sa-east-1.pooler.supabase.com:5432/postgres"
 
 AUTH_SECRET="cole-uma-string-longa-aleatoria-aqui"
 NEXT_PUBLIC_APP_URL="https://seu-app.vercel.app"
 
-NEXT_PUBLIC_SUPABASE_URL="https://xxxxx.supabase.co"
+NEXT_PUBLIC_SUPABASE_URL="https://pvxmcaasiijltwcbquyp.supabase.co"
 NEXT_PUBLIC_SUPABASE_ANON_KEY="eyJ..."
 SUPABASE_SERVICE_ROLE_KEY="eyJ..."
 
@@ -84,6 +101,8 @@ TECNICO_EMAIL="tecnico@empresa.com"
 TECNICO_PASSWORD="sua-senha-forte"
 TECNICO_NOME="Técnico Campo"
 ```
+
+O `prisma/schema.prisma` já está com `directUrl` — não precisa alterar.
 
 **AUTH_SECRET:** gere com:
 ```bash
@@ -128,22 +147,34 @@ git push origin main
 
 ### 3.3 Variáveis de ambiente na Vercel
 
-Em **Environment Variables**, adicione **todas** estas (Production):
+**Atalho:** na raiz do projeto existe `.env.vercel` (já preenchido com Supabase + auth). Na Vercel:
+
+1. **Settings** → **Environment Variables** → **Import .env**
+2. Selecione o arquivo `.env.vercel`
+3. Marque **Production** (e **Preview** se quiser testar branches)
+4. Confirme a importação
+
+Ou adicione manualmente **todas** estas (Production):
 
 | Nome | Valor |
 |------|-------|
-| `DATABASE_URL` | String Transaction do Supabase (porta 6543) |
-| `AUTH_SECRET` | Mesma string gerada com openssl |
-| `NEXT_PUBLIC_APP_URL` | `https://SEU-PROJETO.vercel.app` (URL que a Vercel vai gerar) |
+| `DATABASE_URL` | Transaction pooler — porta **6543**, com `?pgbouncer=true` |
+| `DIRECT_URL` | Session pooler — porta **5432** (Prisma migrations/push) |
+| `AUTH_SECRET` | Mesma string gerada com `openssl rand -base64 32` |
+| `NEXT_PUBLIC_APP_URL` | `https://SEU-PROJETO.vercel.app` (placeholder até o 1º deploy) |
 | `NEXT_PUBLIC_SUPABASE_URL` | Project URL do Supabase |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | anon key |
-| `SUPABASE_SERVICE_ROLE_KEY` | service_role key |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Chave publishable / anon |
+| `SUPABASE_SERVICE_ROLE_KEY` | Chave secret / service_role |
 | `ADMIN_EMAIL` | E-mail do admin |
 | `ADMIN_PASSWORD` | Senha do admin |
 | `ADMIN_NOME` | Nome do admin |
 | `TECNICO_EMAIL` | E-mail do técnico |
 | `TECNICO_PASSWORD` | Senha do técnico |
 | `TECNICO_NOME` | Nome do técnico |
+
+> **Não adicione** `RUN_DB_SETUP` na Vercel — isso é só para Docker. O banco já foi criado com `db push` + `seed`.
+
+> Se a senha do banco tiver `/`, use `%2F` na URL (ex.: `z%2Fg5QCq...`).
 
 Marque **Production** (e opcionalmente Preview) para cada variável.
 

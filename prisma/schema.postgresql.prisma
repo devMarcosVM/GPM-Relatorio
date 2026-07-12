@@ -7,9 +7,9 @@ generator client {
 // Veja docs/SUPABASE.md
 
 datasource db {
-  provider  = "sqlite"
+  provider  = "postgresql"
   url       = env("DATABASE_URL")
-  // directUrl = env("DIRECT_URL") // descomente ao usar PostgreSQL/Supabase
+  directUrl = env("DIRECT_URL")
 }
 
 model User {

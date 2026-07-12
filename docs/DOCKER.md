@@ -3,35 +3,31 @@
 ## Opção 1 — Tudo no Docker (app + banco)
 
 ```bash
-# Subir app + PostgreSQL
+cp .env.docker.example .env.docker   # primeira vez — edite senhas
 docker compose up -d --build
-
-# Ver logs
-docker compose logs -f app
+# ou com sudo:
+sudo docker compose up -d --build
 ```
 
 Acesse: [http://localhost:3000](http://localhost:3000)
 
 Na primeira execução, o container aplica o schema (`prisma db push`) e roda o seed automaticamente (`RUN_DB_SETUP=true`).
 
-### Usuários demo
-
-| Papel   | E-mail              | Senha      |
-|---------|---------------------|------------|
-| Admin   | admin@empresa.com   | admin123   |
-| Técnico | tecnico@empresa.com | tecnico123 |
-
 ### Variáveis de ambiente
 
-Copie `.env.docker.example` e passe no compose:
+O `docker-compose.yml` **não** contém usuário/senha do banco. Tudo fica em `.env.docker`:
 
 ```bash
 cp .env.docker.example .env.docker
-docker compose --env-file .env.docker up -d --build
+# Edite POSTGRES_PASSWORD, AUTH_SECRET e senhas dos usuários
+docker compose up -d --build
 ```
 
 | Variável | Descrição |
 |----------|-----------|
+| `POSTGRES_USER` | Usuário do PostgreSQL no container |
+| `POSTGRES_PASSWORD` | Senha do PostgreSQL (**obrigatória**) |
+| `POSTGRES_DB` | Nome do banco |
 | `AUTH_SECRET` | Segredo JWT (obrigatório em produção) |
 | `NEXT_PUBLIC_APP_URL` | URL pública do app |
 | `RUN_DB_SETUP` | `true` roda migrate + seed ao iniciar |
@@ -55,6 +51,8 @@ Para inspecionar o banco do stack completo:
 docker compose exec db psql -U relatorio -d relatorio
 ```
 
+(Use os mesmos valores definidos no `.env.docker`.)
+
 ---
 
 ## Opção 2 — Só PostgreSQL no Docker (desenvolvimento)
@@ -65,10 +63,10 @@ npm run db:local
 npm run dev
 ```
 
-Use o `.env` local com:
+Use o `.env` local com a mesma senha do `.env.docker`:
 
 ```
-DATABASE_URL="postgresql://relatorio:relatorio123@localhost:5432/relatorio"
+DATABASE_URL="postgresql://SEU_USER:SUA_SENHA@localhost:5432/SEU_BANCO"
 ```
 
 ---
