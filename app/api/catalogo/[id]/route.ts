@@ -17,6 +17,7 @@ export async function PUT(
         nome: data.nome,
         descricao: data.descricao || null,
         preco: parseFloat(data.preco) || 0,
+        unidade: data.unidade === "METRO" ? "METRO" : "UNIDADE",
         orientacaoFoto: data.orientacaoFoto,
         ativo: data.ativo ?? true,
       },

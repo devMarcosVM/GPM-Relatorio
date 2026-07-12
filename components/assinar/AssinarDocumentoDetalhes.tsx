@@ -3,6 +3,11 @@
 import type { DocumentoAssinaturaPublico } from "@/lib/assinatura";
 import { toAssetPath } from "@/lib/assetUrl";
 import { formatCurrency, formatDate, formatDateTime } from "@/lib/utils";
+import {
+  formatPrecoUnitario,
+  formatQuantidade,
+  normalizeUnidade,
+} from "@/lib/unidade";
 
 function InfoRow({ label, value }: { label: string; value?: string | null }) {
   if (!value) return null;
@@ -159,7 +164,9 @@ export function AssinarDocumentoDetalhes({ info }: { info: DocumentoAssinaturaPu
                   </tr>
                 </thead>
                 <tbody>
-                  {info.orcamento.itens.map((item, index) => (
+                  {info.orcamento.itens.map((item, index) => {
+                    const unidade = normalizeUnidade(item.unidade);
+                    return (
                     <tr key={index} className="border-t border-border">
                       <td className="px-3 py-2">
                         <p className="font-medium">{item.servicoNome}</p>
@@ -167,15 +174,17 @@ export function AssinarDocumentoDetalhes({ info }: { info: DocumentoAssinaturaPu
                           <p className="text-xs text-muted">{item.servicoDescricao}</p>
                         )}
                       </td>
-                      <td className="px-3 py-2 text-center">{item.quantidade}</td>
+                      <td className="px-3 py-2 text-center">
+                        {formatQuantidade(item.quantidade, unidade)}
+                      </td>
                       <td className="px-3 py-2 text-right">
-                        {formatCurrency(item.precoUnitario)}
+                        {formatPrecoUnitario(item.precoUnitario, unidade)}
                       </td>
                       <td className="px-3 py-2 text-right font-medium">
                         {formatCurrency(item.subtotal)}
                       </td>
                     </tr>
-                  ))}
+                  )})}
                 </tbody>
               </table>
             </div>

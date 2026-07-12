@@ -54,6 +54,7 @@ model CatalogoServico {
   nome           String
   descricao      String?
   preco          Float           @default(0)
+  unidade        String          @default("UNIDADE")
   orientacaoFoto String          @default("VERTICAL")
   ativo          Boolean         @default(true)
   createdAt      DateTime        @default(now())
@@ -125,6 +126,6 @@ model OrcamentoItem {
   orcamento     Orcamento       @relation(fields: [orcamentoId], references: [id], onDelete: Cascade)
   servicoId     String
   servico       CatalogoServico @relation(fields: [servicoId], references: [id])
-  quantidade    Int             @default(1)
+  quantidade    Float           @default(1)
   precoUnitario Float
 }

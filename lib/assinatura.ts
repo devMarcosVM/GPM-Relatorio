@@ -51,6 +51,7 @@ export interface DocumentoAssinaturaPublico {
     itens: Array<{
       servicoNome: string;
       servicoDescricao: string | null;
+      unidade: string;
       quantidade: number;
       precoUnitario: number;
       subtotal: number;
@@ -123,7 +124,7 @@ export async function buscarDocumentoPublicoPorToken(
       criadoPor: { select: { nome: true } },
       itens: {
         include: {
-          servico: { select: { nome: true, descricao: true } },
+          servico: { select: { nome: true, descricao: true, unidade: true } },
         },
       },
     },
@@ -169,6 +170,7 @@ export async function buscarDocumentoPublicoPorToken(
       itens: orcamento.itens.map((item) => ({
         servicoNome: item.servico.nome,
         servicoDescricao: item.servico.descricao,
+        unidade: item.servico.unidade,
         quantidade: item.quantidade,
         precoUnitario: item.precoUnitario,
         subtotal: item.quantidade * item.precoUnitario,

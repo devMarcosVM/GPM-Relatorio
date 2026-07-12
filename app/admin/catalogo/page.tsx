@@ -9,12 +9,19 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Trash2, Pencil } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
+import {
+  UNIDADES_SERVICO,
+  formatPrecoUnitario,
+  normalizeUnidade,
+  type UnidadeServico,
+} from "@/lib/unidade";
 
 interface Servico {
   id: string;
   nome: string;
   descricao?: string | null;
   preco: number;
+  unidade: string;
   orientacaoFoto: string;
   ativo: boolean;
 }
@@ -23,6 +30,7 @@ const emptyServico = {
   nome: "",
   descricao: "",
   preco: "",
+  unidade: "UNIDADE" as UnidadeServico,
   orientacaoFoto: "VERTICAL",
 };
 
@@ -49,6 +57,7 @@ export default function CatalogoPage() {
       nome: form.nome,
       descricao: form.descricao,
       preco: form.preco,
+      unidade: form.unidade,
       orientacaoFoto: form.orientacaoFoto,
     };
 
@@ -77,6 +86,7 @@ export default function CatalogoPage() {
       nome: servico.nome,
       descricao: servico.descricao || "",
       preco: String(servico.preco),
+      unidade: normalizeUnidade(servico.unidade),
       orientacaoFoto: servico.orientacaoFoto,
     });
     setEditingId(servico.id);
@@ -118,10 +128,25 @@ export default function CatalogoPage() {
             />
             <Input
               type="number"
-              placeholder="Preço (R$)"
+              placeholder={form.unidade === "METRO" ? "Preço por metro (R$)" : "Preço (R$)"}
               value={form.preco}
               onChange={(e) => setForm({ ...form, preco: e.target.value })}
             />
+            <Select
+              value={form.unidade}
+              onChange={(e) =>
+                setForm({
+                  ...form,
+                  unidade: e.target.value as UnidadeServico,
+                })
+              }
+            >
+              {UNIDADES_SERVICO.map((unidade) => (
+                <option key={unidade.value} value={unidade.value}>
+                  {unidade.label}
+                </option>
+              ))}
+            </Select>
             <Select
               value={form.orientacaoFoto}
               onChange={(e) =>
@@ -163,7 +188,7 @@ export default function CatalogoPage() {
                 </Badge>
               </div>
               <p className="text-sm text-primary font-semibold">
-                {formatCurrency(s.preco)}
+                {formatPrecoUnitario(s.preco, normalizeUnidade(s.unidade))}
               </p>
               {s.descricao && (
                 <p className="text-xs text-muted">{s.descricao}</p>

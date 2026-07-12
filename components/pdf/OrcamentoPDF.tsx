@@ -1,6 +1,11 @@
 import { Document, Page, Text, View } from "@react-pdf/renderer";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { calcOrcamentoSubtotal, calcOrcamentoTotal, calcDescontoPacote } from "@/lib/orcamento";
+import {
+  formatPrecoUnitario,
+  formatQuantidade,
+  normalizeUnidade,
+} from "@/lib/unidade";
 import { pdfStyles } from "./pdfTheme";
 import {
   PdfHeader,
@@ -35,7 +40,7 @@ interface OrcamentoPDFProps {
       endereco?: string | null;
     };
     itens: Array<{
-      servico: { nome: string };
+      servico: { nome: string; unidade?: string | null };
       quantidade: number;
       precoUnitario: number;
     }>;
@@ -113,22 +118,24 @@ export function OrcamentoPDF({ empresa, orcamento, absoluteUrl }: OrcamentoPDFPr
               Total
             </Text>
           </View>
-          {orcamento.itens.map((item, idx) => (
+          {orcamento.itens.map((item, idx) => {
+            const unidade = normalizeUnidade(item.servico.unidade);
+            return (
             <View key={idx} style={pdfStyles.tableRow}>
               <Text style={[pdfStyles.tableCell, { flex: 3 }]}>
                 {item.servico.nome}
               </Text>
               <Text style={[pdfStyles.tableCell, pdfStyles.colQty]}>
-                {item.quantidade}
+                {formatQuantidade(item.quantidade, unidade)}
               </Text>
               <Text style={[pdfStyles.tableCell, pdfStyles.colUnit]}>
-                {formatCurrency(item.precoUnitario)}
+                {formatPrecoUnitario(item.precoUnitario, unidade)}
               </Text>
               <Text style={[pdfStyles.tableCell, pdfStyles.colTotal]}>
                 {formatCurrency(item.quantidade * item.precoUnitario)}
               </Text>
             </View>
-          ))}
+          )})}
         </View>
 
         <View style={pdfStyles.totalsBox}>

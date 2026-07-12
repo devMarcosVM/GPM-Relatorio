@@ -22,3 +22,33 @@ export function calcOrcamentoTotal(
 export function calcDescontoPacote(subtotal: number, valorFinal: number) {
   return Math.max(0, subtotal - valorFinal);
 }
+
+export function validateDescontoInput(
+  value: string
+):
+  | { valid: true; desconto: number; display: string }
+  | { valid: false; message: string } {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return { valid: false, message: "Informe o desconto (%)" };
+  }
+
+  const parsed = parseFloat(trimmed.replace(",", "."));
+  if (!Number.isFinite(parsed)) {
+    return { valid: false, message: "Valor inválido" };
+  }
+
+  if (parsed < 0) {
+    return { valid: false, message: "Mínimo de 0%" };
+  }
+
+  if (parsed > 100) {
+    return { valid: false, message: "Máximo de 100%" };
+  }
+
+  const display = Number.isInteger(parsed)
+    ? String(parsed)
+    : parsed.toLocaleString("pt-BR", { maximumFractionDigits: 2 });
+
+  return { valid: true, desconto: parsed, display };
+}

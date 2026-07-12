@@ -52,6 +52,7 @@ async function main() {
     { nome: "Limpeza de Caixa de Sabão", preco: 300, orientacaoFoto: "VERTICAL" },
     { nome: "Desentupimento de Ralo/Pia", preco: 200, orientacaoFoto: "HORIZONTAL" },
     { nome: "Jateamento de Tubulação", preco: 450, orientacaoFoto: "HORIZONTAL" },
+    { nome: "Lavagem de Tubulação", preco: 120, orientacaoFoto: "HORIZONTAL", unidade: "METRO" },
     { nome: "Sucção de Resíduos", preco: 600, orientacaoFoto: "VERTICAL" },
     { nome: "Desentupimento Geral", preco: 250, orientacaoFoto: "HORIZONTAL" },
   ];

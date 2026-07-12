@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 import { generateAssinaturaToken, getAssinaturaExpiry } from "@/lib/assinaturaLink";
+import { clampQuantidade, normalizeUnidade } from "@/lib/unidade";
 
 async function getNextNumero() {
   const last = await prisma.orcamento.findFirst({
@@ -49,6 +50,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const servicoIds = data.itens.map(
+      (item: { servicoId: string }) => item.servicoId
+    );
+    const servicos = await prisma.catalogoServico.findMany({
+      where: { id: { in: servicoIds } },
+      select: { id: true, unidade: true },
+    });
+    const unidadePorServico = new Map(
+      servicos.map((servico) => [servico.id, normalizeUnidade(servico.unidade)])
+    );
+
     const orcamento = await prisma.orcamento.create({
       data: {
         numero: await getNextNumero(),
@@ -72,7 +84,10 @@ export async function POST(request: NextRequest) {
               precoUnitario: number;
             }) => ({
               servicoId: item.servicoId,
-              quantidade: item.quantidade,
+              quantidade: clampQuantidade(
+                Number(item.quantidade) || 1,
+                unidadePorServico.get(item.servicoId) || "UNIDADE"
+              ),
               precoUnitario: item.precoUnitario,
             })
           ),

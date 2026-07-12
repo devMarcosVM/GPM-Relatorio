@@ -10,7 +10,20 @@ import { ClienteSearchSelect } from "@/components/cliente/ClienteSearchSelect";
 import { Card } from "@/components/ui/card";
 import { ArrowLeft, Plus, Minus, Trash2, Download, MessageCircle, Copy, Check } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
-import { calcOrcamentoSubtotal, calcOrcamentoTotal, calcDescontoPacote } from "@/lib/orcamento";
+import {
+  clampQuantidade,
+  formatPrecoUnitario,
+  formatQuantidade,
+  formatQuantidadeInput,
+  getQuantidadeInicial,
+  getQuantidadeLabel,
+  getQuantidadeMin,
+  getQuantidadeStep,
+  normalizeUnidade,
+  validateQuantidadeInput,
+  type UnidadeServico,
+} from "@/lib/unidade";
+import { calcOrcamentoSubtotal, calcOrcamentoTotal, calcDescontoPacote, validateDescontoInput } from "@/lib/orcamento";
 import {
   buildAssinaturaUrl,
   buildAssinaturaWhatsAppMessage,
@@ -28,12 +41,16 @@ interface Servico {
   id: string;
   nome: string;
   preco: number;
+  unidade: string;
 }
 
 interface ItemOrcamento {
   servicoId: string;
   servicoNome: string;
+  unidade: UnidadeServico;
   quantidade: number;
+  quantidadeInput: string;
+  quantidadeErro: string;
   precoUnitario: number;
   precoCatalogo: number;
 }
@@ -85,6 +102,8 @@ export function OrcamentoForm({ backHref, backLabel = "Voltar" }: OrcamentoFormP
   const [itens, setItens] = useState<ItemOrcamento[]>([]);
   const [selectedServico, setSelectedServico] = useState("");
   const [desconto, setDesconto] = useState(0);
+  const [descontoInput, setDescontoInput] = useState("0");
+  const [descontoErro, setDescontoErro] = useState("");
   const [valorFinalPacote, setValorFinalPacote] = useState("");
   const [validadeDias, setValidadeDias] = useState(15);
   const [formaPagamentoTipo, setFormaPagamentoTipo] = useState<FormaPagamentoTipo | "">("");
@@ -117,12 +136,17 @@ export function OrcamentoForm({ backHref, backLabel = "Voltar" }: OrcamentoFormP
   const addItem = () => {
     const servico = servicos.find((s) => s.id === selectedServico);
     if (!servico) return;
+    const unidade = normalizeUnidade(servico.unidade);
+    const quantidade = getQuantidadeInicial(unidade);
     setItens([
       ...itens,
       {
         servicoId: servico.id,
         servicoNome: servico.nome,
-        quantidade: 1,
+        unidade,
+        quantidade,
+        quantidadeInput: formatQuantidadeInput(quantidade, unidade),
+        quantidadeErro: "",
         precoUnitario: servico.preco,
         precoCatalogo: servico.preco,
       },
@@ -134,10 +158,67 @@ export function OrcamentoForm({ backHref, backLabel = "Voltar" }: OrcamentoFormP
     setItens(itens.filter((_, i) => i !== idx));
   };
 
+  const setQuantidadeInput = (idx: number, value: string) => {
+    const updated = [...itens];
+    updated[idx] = {
+      ...updated[idx],
+      quantidadeInput: value,
+      quantidadeErro: "",
+    };
+    setItens(updated);
+  };
+
+  const commitQuantidade = (idx: number) => {
+    const item = itens[idx];
+    const result = validateQuantidadeInput(item.quantidadeInput, item.unidade);
+    const updated = [...itens];
+
+    if (!result.valid) {
+      updated[idx] = { ...item, quantidadeErro: result.message };
+      setItens(updated);
+      return false;
+    }
+
+    updated[idx] = {
+      ...item,
+      quantidade: result.quantidade,
+      quantidadeInput: result.display,
+      quantidadeErro: "",
+    };
+    setItens(updated);
+    return true;
+  };
+
   const updateQuantidade = (idx: number, quantidade: number) => {
     const updated = [...itens];
-    updated[idx].quantidade = Math.max(1, quantidade);
+    const unidade = updated[idx].unidade;
+    const valor = clampQuantidade(quantidade, unidade);
+    updated[idx] = {
+      ...updated[idx],
+      quantidade: valor,
+      quantidadeInput: formatQuantidadeInput(valor, unidade),
+      quantidadeErro: "",
+    };
     setItens(updated);
+  };
+
+  const validarQuantidadesItens = () => {
+    let ok = true;
+    const updated = itens.map((item) => {
+      const result = validateQuantidadeInput(item.quantidadeInput, item.unidade);
+      if (!result.valid) {
+        ok = false;
+        return { ...item, quantidadeErro: result.message };
+      }
+      return {
+        ...item,
+        quantidade: result.quantidade,
+        quantidadeInput: result.display,
+        quantidadeErro: "",
+      };
+    });
+    setItens(updated);
+    return ok;
   };
 
   const updatePrecoUnitario = (idx: number, preco: number) => {
@@ -149,16 +230,41 @@ export function OrcamentoForm({ backHref, backLabel = "Voltar" }: OrcamentoFormP
   const subtotal = calcOrcamentoSubtotal(itens);
   const valorFinal =
     valorFinalPacote.trim() === "" ? null : parseMoney(valorFinalPacote);
-  const total = calcOrcamentoTotal(itens, desconto, valorFinal);
-  const descontoValor = subtotal * (desconto / 100);
   const usaPacote = valorFinal != null;
+  const total = calcOrcamentoTotal(itens, usaPacote ? 0 : desconto, valorFinal);
+  const descontoValor = subtotal * (desconto / 100);
   const descontoPacote =
     usaPacote && valorFinal != null
       ? calcDescontoPacote(subtotal, valorFinal)
       : 0;
 
+  const validarDesconto = () => {
+    if (usaPacote) {
+      setDescontoErro("");
+      return true;
+    }
+    const result = validateDescontoInput(descontoInput);
+    if (!result.valid) {
+      setDescontoErro(result.message);
+      return false;
+    }
+    setDesconto(result.desconto);
+    setDescontoInput(result.display);
+    setDescontoErro("");
+    return true;
+  };
+
   const criarOrcamento = async () => {
     if (!clienteId || itens.length === 0) return;
+    if (!validarQuantidadesItens()) {
+      setError("Corrija as quantidades dos serviços antes de gerar o orçamento.");
+      return;
+    }
+    if (!validarDesconto()) {
+      setError("Corrija o desconto antes de gerar o orçamento.");
+      return;
+    }
+
     setLoading(true);
     setError("");
 
@@ -302,7 +408,7 @@ export function OrcamentoForm({ backHref, backLabel = "Voltar" }: OrcamentoFormP
             <option value="">Adicionar serviço</option>
             {servicos.map((s) => (
               <option key={s.id} value={s.id}>
-                {s.nome} — {formatCurrency(s.preco)}
+                {s.nome} — {formatPrecoUnitario(s.preco, normalizeUnidade(s.unidade))}
               </option>
             ))}
           </Select>
@@ -324,7 +430,8 @@ export function OrcamentoForm({ backHref, backLabel = "Voltar" }: OrcamentoFormP
                 <div>
                   <p className="text-sm font-medium">{item.servicoNome}</p>
                   <p className="text-xs text-muted">
-                    Tabela: {formatCurrency(item.precoCatalogo)}
+                    Tabela:{" "}
+                    {formatPrecoUnitario(item.precoCatalogo, item.unidade)}
                     {precoAlterado && " • preço ajustado"}
                   </p>
                 </div>
@@ -336,7 +443,7 @@ export function OrcamentoForm({ backHref, backLabel = "Voltar" }: OrcamentoFormP
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                 <div>
                   <label className="mb-1 block text-xs font-medium text-muted">
-                    Qtd
+                    {getQuantidadeLabel(item.unidade)}
                   </label>
                   <div className="flex items-center gap-1">
                     <Button
@@ -344,36 +451,62 @@ export function OrcamentoForm({ backHref, backLabel = "Voltar" }: OrcamentoFormP
                       variant="outline"
                       size="sm"
                       className="h-10 w-10 shrink-0 px-0"
-                      onClick={() => updateQuantidade(idx, item.quantidade - 1)}
-                      disabled={item.quantidade <= 1}
+                      onClick={() =>
+                        updateQuantidade(
+                          idx,
+                          item.quantidade - getQuantidadeStep(item.unidade)
+                        )
+                      }
+                      disabled={item.quantidade <= getQuantidadeMin(item.unidade)}
                       aria-label="Diminuir quantidade"
                     >
                       <Minus className="h-4 w-4" />
                     </Button>
                     <Input
-                      type="number"
-                      min={1}
-                      value={item.quantidade}
-                      onChange={(e) =>
-                        updateQuantidade(idx, parseInt(e.target.value) || 1)
+                      type="text"
+                      inputMode="decimal"
+                      value={item.quantidadeInput}
+                      onChange={(e) => setQuantidadeInput(idx, e.target.value)}
+                      onBlur={() => commitQuantidade(idx)}
+                      placeholder={
+                        item.unidade === "METRO" ? "Ex: 12" : "Ex: 1"
                       }
-                      className="text-center"
+                      className={`text-center ${
+                        item.quantidadeErro ? "border-red-500" : ""
+                      }`}
+                      aria-invalid={!!item.quantidadeErro}
                     />
                     <Button
                       type="button"
                       variant="outline"
                       size="sm"
                       className="h-10 w-10 shrink-0 px-0"
-                      onClick={() => updateQuantidade(idx, item.quantidade + 1)}
+                      onClick={() =>
+                        updateQuantidade(
+                          idx,
+                          item.quantidade + getQuantidadeStep(item.unidade)
+                        )
+                      }
                       aria-label="Aumentar quantidade"
                     >
                       <Plus className="h-4 w-4" />
                     </Button>
                   </div>
+                  {item.quantidadeErro && (
+                    <p className="mt-1 text-xs text-red-600" role="alert">
+                      {item.quantidadeErro}
+                    </p>
+                  )}
+                  {item.unidade === "METRO" && !item.quantidadeErro && (
+                    <p className="mt-1 text-xs text-muted">
+                      {formatQuantidade(item.quantidade, item.unidade)} ×{" "}
+                      {formatPrecoUnitario(item.precoUnitario, item.unidade)}
+                    </p>
+                  )}
                 </div>
                 <div>
                   <label className="mb-1 block text-xs font-medium text-muted">
-                    Preço unit. (R$)
+                    {item.unidade === "METRO" ? "Preço por metro (R$)" : "Preço unit. (R$)"}
                   </label>
                   <Input
                     type="number"
@@ -406,13 +539,24 @@ export function OrcamentoForm({ backHref, backLabel = "Voltar" }: OrcamentoFormP
           <div>
             <label className="mb-1 block text-sm font-medium">Desconto (%)</label>
             <Input
-              type="number"
-              min={0}
-              max={100}
-              value={desconto}
+              type="text"
+              inputMode="decimal"
+              value={descontoInput}
               disabled={usaPacote}
-              onChange={(e) => setDesconto(parseFloat(e.target.value) || 0)}
+              placeholder="Ex: 10"
+              onChange={(e) => {
+                setDescontoInput(e.target.value);
+                setDescontoErro("");
+              }}
+              onBlur={validarDesconto}
+              className={descontoErro ? "border-red-500" : ""}
+              aria-invalid={!!descontoErro}
             />
+            {descontoErro && !usaPacote && (
+              <p className="mt-1 text-xs text-red-600" role="alert">
+                {descontoErro}
+              </p>
+            )}
           </div>
           <div>
             <label className="mb-1 block text-sm font-medium">
@@ -511,7 +655,13 @@ export function OrcamentoForm({ backHref, backLabel = "Voltar" }: OrcamentoFormP
         className="w-full"
         size="lg"
         onClick={criarOrcamento}
-        disabled={!clienteId || itens.length === 0 || loading}
+        disabled={
+          !clienteId ||
+          itens.length === 0 ||
+          loading ||
+          itens.some((item) => item.quantidadeErro) ||
+          (!usaPacote && !!descontoErro)
+        }
       >
         {loading ? "Gerando..." : "Gerar Orçamento"}
       </Button>

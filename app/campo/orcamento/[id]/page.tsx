@@ -16,6 +16,10 @@ import {
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { calcOrcamentoTotal } from "@/lib/orcamento";
 import {
+  formatQuantidade,
+  normalizeUnidade,
+} from "@/lib/unidade";
+import {
   copiarLinkAssinatura,
   enviarWhatsAppAssinatura,
   obterTokenOrcamento,
@@ -35,7 +39,7 @@ interface Orcamento {
   itens: Array<{
     quantidade: number;
     precoUnitario: number;
-    servico: { nome: string };
+    servico: { nome: string; unidade?: string | null };
   }>;
 }
 
@@ -169,12 +173,15 @@ export default function CampoOrcamentoPage() {
           <p className="text-xs text-muted">{formatDate(orcamento.createdAt)}</p>
 
           <ul className="space-y-1 text-sm">
-            {orcamento.itens.map((item, i) => (
+            {orcamento.itens.map((item, i) => {
+              const unidade = normalizeUnidade(item.servico.unidade);
+              return (
               <li key={i}>
-                {item.servico.nome} x{item.quantidade} —{" "}
+                {item.servico.nome}{" "}
+                {formatQuantidade(item.quantidade, unidade)} —{" "}
                 {formatCurrency(item.precoUnitario * item.quantidade)}
               </li>
-            ))}
+            )})}
           </ul>
         </Card>
 

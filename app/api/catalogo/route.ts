@@ -29,6 +29,7 @@ export async function POST(request: NextRequest) {
         nome: data.nome,
         descricao: data.descricao || null,
         preco: parseFloat(data.preco) || 0,
+        unidade: data.unidade === "METRO" ? "METRO" : "UNIDADE",
         orientacaoFoto: data.orientacaoFoto || "VERTICAL",
         ativo: data.ativo ?? true,
       },
