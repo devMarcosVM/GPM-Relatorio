@@ -15,8 +15,13 @@ export interface ClienteFormData {
   endereco?: string | null;
 }
 
-export interface ClienteDbPayload extends ClienteFormData {
+export interface ClienteDbPayload {
+  nome: string;
+  documento: string | null;
   documentoDigits: string | null;
+  telefone: string | null;
+  email: string | null;
+  endereco: string | null;
 }
 
 export function documentoDigitsFrom(value?: string | null): string | null {
