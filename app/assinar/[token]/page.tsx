@@ -137,7 +137,12 @@ export default function AssinarPage() {
             </p>
           )}
 
-          <Button className="mt-4 w-full" onClick={assinar} disabled={enviando}>
+          <p className="mt-4 text-center text-xs text-muted">
+            Ao clicar em Confirmar assinatura, você concorda com os termos deste
+            contrato.
+          </p>
+
+          <Button className="mt-3 w-full" onClick={assinar} disabled={enviando}>
             {enviando ? "Salvando..." : "Confirmar assinatura"}
           </Button>
         </Card>

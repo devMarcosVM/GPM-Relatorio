@@ -2,7 +2,7 @@
 
 import type { DocumentoAssinaturaPublico } from "@/lib/assinatura";
 import { toAssetPath } from "@/lib/assetUrl";
-import { formatCurrency, formatDate, formatDateTime } from "@/lib/utils";
+import { formatCurrency, formatDate } from "@/lib/utils";
 import {
   formatPrecoUnitario,
   formatQuantidade,
@@ -49,23 +49,15 @@ export function AssinarDocumentoDetalhes({ info }: { info: DocumentoAssinaturaPu
         <InfoRow label="CPF/CNPJ" value={info.cliente.documento} />
         <InfoRow label="Telefone" value={info.cliente.telefone} />
         <InfoRow label="Endereço" value={info.cliente.endereco} />
-        <InfoRow label="Responsável técnico" value={info.responsavelNome} />
+        {info.tipo !== "relatorio" && (
+          <InfoRow label="Responsável técnico" value={info.responsavelNome} />
+        )}
       </section>
 
       {info.tipo === "relatorio" && info.relatorio && (
         <>
           <section className="space-y-2 rounded-lg border border-border p-4 text-sm">
             <h2 className="font-semibold">Dados do serviço</h2>
-            <InfoRow
-              label="Início"
-              value={formatDateTime(info.relatorio.dataInicio)}
-            />
-            {info.relatorio.dataFim && (
-              <InfoRow
-                label="Conclusão"
-                value={formatDateTime(info.relatorio.dataFim)}
-              />
-            )}
             <InfoRow
               label="Local do serviço"
               value={info.relatorio.enderecoServico}

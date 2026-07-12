@@ -1,5 +1,5 @@
 import { Document, Page, Text, View, Image } from "@react-pdf/renderer";
-import { formatDate, formatDateTime } from "@/lib/utils";
+import { formatDate } from "@/lib/utils";
 import { pdfStyles } from "./pdfTheme";
 import {
   PdfHeader,
@@ -84,27 +84,6 @@ export function RelatorioPDF({ empresa, relatorio, absoluteUrl }: RelatorioPDFPr
             telefone: relatorio.cliente.telefone,
           }}
         />
-
-        <View style={pdfStyles.metaRow}>
-          <View style={pdfStyles.metaItem}>
-            <Text style={pdfStyles.metaLabel}>Início:</Text>
-            <Text style={pdfStyles.metaValue}>
-              {formatDateTime(relatorio.dataInicio)}
-            </Text>
-          </View>
-          {relatorio.dataFim && (
-            <View style={pdfStyles.metaItem}>
-              <Text style={pdfStyles.metaLabel}>Fim:</Text>
-              <Text style={pdfStyles.metaValue}>
-                {formatDateTime(relatorio.dataFim)}
-              </Text>
-            </View>
-          )}
-          <View style={pdfStyles.metaItem}>
-            <Text style={pdfStyles.metaLabel}>Responsável:</Text>
-            <Text style={pdfStyles.metaValue}>{relatorio.tecnico.nome}</Text>
-          </View>
-        </View>
 
         <PdfSectionBanner title="SERVIÇOS" />
         <Text style={pdfStyles.introText}>
