@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth";
+import { normalizeClientePayload, validateCliente } from "@/lib/cliente";
 
 export async function PUT(
   request: NextRequest,
@@ -10,16 +11,16 @@ export async function PUT(
     await requireAdmin();
     const { id } = await params;
     const data = await request.json();
+    const payload = normalizeClientePayload(data);
+    const validationError = validateCliente(payload);
+
+    if (validationError) {
+      return NextResponse.json({ error: validationError }, { status: 400 });
+    }
 
     const cliente = await prisma.cliente.update({
       where: { id },
-      data: {
-        nome: data.nome,
-        documento: data.documento || null,
-        telefone: data.telefone || null,
-        email: data.email || null,
-        endereco: data.endereco || null,
-      },
+      data: payload,
     });
 
     return NextResponse.json(cliente);

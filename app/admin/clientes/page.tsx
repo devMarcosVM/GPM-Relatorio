@@ -8,6 +8,7 @@ import { ListFilters } from "@/components/admin/ListFilters";
 import { Plus, Trash2, Pencil } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 import { isInDateRange, matchesSearch } from "@/lib/adminFilters";
+import { formatDocumento, formatTelefone } from "@/lib/documentosBr";
 
 interface Cliente {
   id: string;
@@ -35,6 +36,7 @@ export default function ClientesPage() {
   const [search, setSearch] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  const [formError, setFormError] = useState("");
 
   const load = () => {
     fetch("/api/clientes")
@@ -59,19 +61,24 @@ export default function ClientesPage() {
 
   const save = async () => {
     if (!form.nome) return;
+    setFormError("");
 
-    if (editingId) {
-      await fetch(`/api/clientes/${editingId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
-      });
-    } else {
-      await fetch("/api/clientes", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
-      });
+    const res = editingId
+      ? await fetch(`/api/clientes/${editingId}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(form),
+        })
+      : await fetch("/api/clientes", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(form),
+        });
+
+    const data = await res.json();
+    if (!res.ok) {
+      setFormError(data.error || "Erro ao salvar cliente");
+      return;
     }
 
     setForm(emptyCliente);
@@ -83,8 +90,8 @@ export default function ClientesPage() {
   const edit = (cliente: Cliente) => {
     setForm({
       nome: cliente.nome,
-      documento: cliente.documento || "",
-      telefone: cliente.telefone || "",
+      documento: formatDocumento(cliente.documento || ""),
+      telefone: formatTelefone(cliente.telefone || ""),
       email: cliente.email || "",
       endereco: cliente.endereco || "",
     });
@@ -150,12 +157,22 @@ export default function ClientesPage() {
             <Input
               placeholder="CPF/CNPJ"
               value={form.documento}
-              onChange={(e) => setForm({ ...form, documento: e.target.value })}
+              onChange={(e) =>
+                setForm({ ...form, documento: formatDocumento(e.target.value) })
+              }
+              onBlur={(e) =>
+                setForm({ ...form, documento: formatDocumento(e.target.value) })
+              }
             />
             <Input
               placeholder="Telefone"
               value={form.telefone}
-              onChange={(e) => setForm({ ...form, telefone: e.target.value })}
+              onChange={(e) =>
+                setForm({ ...form, telefone: formatTelefone(e.target.value) })
+              }
+              onBlur={(e) =>
+                setForm({ ...form, telefone: formatTelefone(e.target.value) })
+              }
             />
             <Input
               placeholder="E-mail"
@@ -169,6 +186,11 @@ export default function ClientesPage() {
               className="md:col-span-2"
             />
           </div>
+          {formError && (
+            <p className="text-sm text-red-600" role="alert">
+              {formError}
+            </p>
+          )}
           <div className="flex gap-2">
             <Button onClick={save}>Salvar</Button>
             <Button variant="outline" onClick={() => setShowForm(false)}>

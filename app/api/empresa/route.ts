@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getSession, requireAdmin } from "@/lib/auth";
-import { validateEmpresa } from "@/lib/empresa";
+import { validateEmpresa, normalizeEmpresaPayload } from "@/lib/empresa";
 
 export async function GET() {
   const session = await getSession();
@@ -18,14 +18,14 @@ export async function PUT(request: NextRequest) {
     await requireAdmin();
     const data = await request.json();
 
-    const payload = {
+    const payload = normalizeEmpresaPayload({
       razaoSocial: data.razaoSocial?.trim() ?? "",
       cnpj: data.cnpj?.trim() ?? "",
       endereco: data.endereco?.trim() ?? "",
       telefone: data.telefone?.trim() ?? "",
       email: data.email?.trim().toLowerCase() ?? "",
       logoUrl: data.logoUrl?.trim() || null,
-    };
+    });
 
     const validationError = validateEmpresa(payload);
     if (validationError) {

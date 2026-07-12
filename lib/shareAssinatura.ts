@@ -3,6 +3,7 @@ import {
   buildAssinaturaWhatsAppMessage,
 } from "./assinaturaLink";
 import { copyToClipboard } from "./utils";
+import { telefoneParaWhatsApp } from "./documentosBr";
 
 export async function regenerarTokenOrcamento(id: string): Promise<string> {
   const res = await fetch(`/api/orcamentos/${id}/link-assinatura`, {
@@ -47,7 +48,7 @@ export function enviarWhatsAppAssinatura(opts: {
   token: string;
   total?: string;
 }) {
-  const phone = opts.telefone.replace(/\D/g, "");
+  const phone = telefoneParaWhatsApp(opts.telefone);
   if (!phone) throw new Error("Cliente sem telefone cadastrado");
 
   const texto = buildAssinaturaWhatsAppMessage({

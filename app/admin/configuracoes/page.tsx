@@ -58,9 +58,9 @@ export default function ConfiguracoesPage() {
         if (data && !data.error) {
           setForm({
             razaoSocial: data.razaoSocial || "",
-            cnpj: data.cnpj || "",
+            cnpj: formatCnpj(data.cnpj || ""),
             endereco: data.endereco || "",
-            telefone: data.telefone || "",
+            telefone: formatTelefone(data.telefone || ""),
             email: data.email || "",
             logoUrl: data.logoUrl || "",
           });
@@ -195,6 +195,9 @@ export default function ConfiguracoesPage() {
                   onChange={(e) =>
                     setForm({ ...form, cnpj: formatCnpj(e.target.value) })
                   }
+                  onBlur={(e) =>
+                    setForm({ ...form, cnpj: formatCnpj(e.target.value) })
+                  }
                   placeholder="00.000.000/0001-00"
                 />
               </div>
@@ -205,6 +208,9 @@ export default function ConfiguracoesPage() {
                 <Input
                   value={form.telefone}
                   onChange={(e) =>
+                    setForm({ ...form, telefone: formatTelefone(e.target.value) })
+                  }
+                  onBlur={(e) =>
                     setForm({ ...form, telefone: formatTelefone(e.target.value) })
                   }
                   placeholder="(11) 99999-0000"
