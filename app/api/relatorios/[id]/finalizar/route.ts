@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth";
+import { generateAssinaturaToken, getAssinaturaExpiry } from "@/lib/assinaturaLink";
 
 export async function POST(
   request: NextRequest,
@@ -21,6 +22,8 @@ export async function POST(
     );
   }
 
+  const assinaturaCliente = data.assinaturaCliente || null;
+
   const updateData: {
     status: string;
     dataFim: Date;
@@ -29,6 +32,8 @@ export async function POST(
     observacoes?: string;
     assinaturaTecnico?: string | null;
     assinaturaCliente?: string | null;
+    tokenAssinatura?: string | null;
+    tokenAssinaturaExpira?: Date | null;
   } = {
     status: "FINALIZADO",
     dataFim: new Date(),
@@ -41,7 +46,15 @@ export async function POST(
     updateData.assinaturaTecnico = data.assinaturaTecnico || null;
   }
   if ("assinaturaCliente" in data) {
-    updateData.assinaturaCliente = data.assinaturaCliente || null;
+    updateData.assinaturaCliente = assinaturaCliente;
+  }
+
+  if (!assinaturaCliente) {
+    updateData.tokenAssinatura = generateAssinaturaToken();
+    updateData.tokenAssinaturaExpira = getAssinaturaExpiry();
+  } else {
+    updateData.tokenAssinatura = null;
+    updateData.tokenAssinaturaExpira = null;
   }
 
   const relatorio = await prisma.relatorio.update({

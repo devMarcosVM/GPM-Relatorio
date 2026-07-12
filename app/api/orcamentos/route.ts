@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth";
+import { generateAssinaturaToken, getAssinaturaExpiry } from "@/lib/assinaturaLink";
 
 async function getNextNumero() {
   const last = await prisma.orcamento.findFirst({
@@ -10,13 +11,17 @@ async function getNextNumero() {
   return (last?.numero ?? 0) + 1;
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   const session = await getSession();
   if (!session) {
     return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
   }
 
+  const { searchParams } = new URL(request.url);
+  const mine = searchParams.get("mine") === "true";
+
   const orcamentos = await prisma.orcamento.findMany({
+    where: mine && session.role === "TECNICO" ? { criadoPorId: session.id } : undefined,
     include: {
       cliente: true,
       criadoPor: { select: { nome: true } },
@@ -57,6 +62,8 @@ export async function POST(request: NextRequest) {
         validadeDias: data.validadeDias || 15,
         formaPagamento: data.formaPagamento || null,
         observacoes: data.observacoes || null,
+        tokenAssinatura: generateAssinaturaToken(),
+        tokenAssinaturaExpira: getAssinaturaExpiry(),
         itens: {
           create: data.itens.map(
             (item: {

@@ -4,7 +4,7 @@ import { jwtVerify } from "jose";
 
 const COOKIE_NAME = "relatorio-session";
 
-const publicPaths = ["/login", "/manifest.json", "/sw.js", "/icon.svg"];
+const publicPaths = ["/login", "/manifest.json", "/sw.js", "/icon.svg", "/assinar"];
 
 function getSecret() {
   return new TextEncoder().encode(
@@ -31,7 +31,9 @@ export async function middleware(request: NextRequest) {
   const isPublic =
     publicPaths.some((p) => pathname === p || pathname.startsWith(`${p}/`)) ||
     pathname.startsWith("/api/auth/login") ||
+    pathname.startsWith("/api/assinar/") ||
     pathname.startsWith("/uploads/") ||
+    pathname.startsWith("/api/media/") ||
     pathname.startsWith("/_next/");
 
   const token = request.cookies.get(COOKIE_NAME)?.value;

@@ -18,7 +18,10 @@ async function main() {
 
   const admin = await prisma.user.upsert({
     where: { email: adminEmail },
-    update: { nome: adminNome },
+    update: {
+      nome: adminNome,
+      password: await bcrypt.hash(adminPassword, 10),
+    },
     create: {
       email: adminEmail,
       password: await bcrypt.hash(adminPassword, 10),
@@ -29,7 +32,10 @@ async function main() {
 
   const tecnico = await prisma.user.upsert({
     where: { email: tecnicoEmail },
-    update: { nome: tecnicoNome },
+    update: {
+      nome: tecnicoNome,
+      password: await bcrypt.hash(tecnicoPassword, 10),
+    },
     create: {
       email: tecnicoEmail,
       password: await bcrypt.hash(tecnicoPassword, 10),

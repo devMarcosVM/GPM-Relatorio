@@ -7,10 +7,15 @@ import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
 import { ListFilters } from "@/components/admin/ListFilters";
 import Link from "next/link";
-import { Download, Trash2, Plus } from "lucide-react";
+import { Download, Trash2, Plus, MessageCircle, Copy } from "lucide-react";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { calcOrcamentoTotal } from "@/lib/orcamento";
 import { isInDateRange, matchesSearch } from "@/lib/adminFilters";
+import {
+  copiarLinkAssinatura,
+  enviarWhatsAppAssinatura,
+  obterTokenOrcamento,
+} from "@/lib/shareAssinatura";
 
 interface Orcamento {
   id: string;
@@ -18,8 +23,10 @@ interface Orcamento {
   status: string;
   desconto: number;
   valorFinal?: number | null;
+  assinaturaCliente?: string | null;
+  tokenAssinatura?: string | null;
   createdAt: string;
-  cliente: { nome: string };
+  cliente: { nome: string; telefone?: string | null };
   criadoPor: { nome: string };
   itens: Array<{
     quantidade: number;
@@ -33,6 +40,7 @@ export default function OrcamentosAdminPage() {
   const [search, setSearch] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  const [sharingId, setSharingId] = useState<string | null>(null);
 
   const load = () => {
     fetch("/api/orcamentos")
@@ -85,6 +93,45 @@ export default function OrcamentosAdminPage() {
     setSearch("");
     setDateFrom("");
     setDateTo("");
+  };
+
+  const shareLink = async (o: Orcamento) => {
+    if (!o.cliente.telefone) {
+      alert("Cadastre o telefone do cliente para enviar o link.");
+      return;
+    }
+
+    setSharingId(o.id);
+    try {
+      const token = await obterTokenOrcamento(o.id, o.tokenAssinatura);
+      enviarWhatsAppAssinatura({
+        telefone: o.cliente.telefone,
+        tipo: "orcamento",
+        numero: o.numero,
+        nomeCliente: o.cliente.nome,
+        token,
+        total: formatCurrency(calcTotal(o)),
+      });
+      load();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Erro ao enviar link");
+    } finally {
+      setSharingId(null);
+    }
+  };
+
+  const copyLink = async (o: Orcamento) => {
+    setSharingId(o.id);
+    try {
+      const token = await obterTokenOrcamento(o.id, o.tokenAssinatura);
+      await copiarLinkAssinatura(token);
+      alert("Link copiado!");
+      load();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Erro ao copiar link");
+    } finally {
+      setSharingId(null);
+    }
   };
 
   return (
@@ -154,7 +201,7 @@ export default function OrcamentosAdminPage() {
                     {formatCurrency(calcTotal(o))}
                   </p>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <Select
                     value={o.status}
                     onChange={(e) => updateStatus(o.id, e.target.value)}
@@ -164,6 +211,28 @@ export default function OrcamentosAdminPage() {
                     <option value="APROVADO">Aprovado</option>
                     <option value="RECUSADO">Recusado</option>
                   </Select>
+                  {!o.assinaturaCliente && (
+                    <>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => shareLink(o)}
+                        disabled={sharingId === o.id}
+                        title="Enviar link de assinatura pelo WhatsApp"
+                      >
+                        <MessageCircle className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => copyLink(o)}
+                        disabled={sharingId === o.id}
+                        title="Copiar link de assinatura"
+                      >
+                        <Copy className="h-4 w-4" />
+                      </Button>
+                    </>
+                  )}
                   <a href={`/api/pdf/orcamento/${o.id}`} target="_blank">
                     <Button variant="outline" size="sm">
                       <Download className="h-4 w-4" />

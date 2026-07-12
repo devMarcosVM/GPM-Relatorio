@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { renderToBuffer } from "@react-pdf/renderer";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth";
-import { getAbsoluteUrl } from "@/lib/storage";
+import { getAbsoluteUrl } from "@/lib/assetUrl";
 import { isEmpresaConfigured } from "@/lib/empresa";
 import { RelatorioPDF } from "@/components/pdf/RelatorioPDF";
 

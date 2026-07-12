@@ -8,9 +8,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select } from "@/components/ui/select";
 import { ClienteSearchSelect } from "@/components/cliente/ClienteSearchSelect";
 import { Card } from "@/components/ui/card";
-import { ArrowLeft, Plus, Trash2, Download, MessageCircle } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Download, MessageCircle, Copy } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { calcOrcamentoSubtotal, calcOrcamentoTotal, calcDescontoPacote } from "@/lib/orcamento";
+import {
+  buildAssinaturaUrl,
+  buildAssinaturaWhatsAppMessage,
+  isIpUrl,
+} from "@/lib/assinaturaLink";
+import { copiarLinkAssinatura } from "@/lib/shareAssinatura";
 
 interface Cliente {
   id: string;
@@ -55,6 +61,8 @@ export function OrcamentoForm({ backHref, backLabel = "Voltar" }: OrcamentoFormP
   const [observacoes, setObservacoes] = useState("");
   const [loading, setLoading] = useState(false);
   const [orcamentoId, setOrcamentoId] = useState<string | null>(null);
+  const [orcamentoNumero, setOrcamentoNumero] = useState(0);
+  const [tokenAssinatura, setTokenAssinatura] = useState<string | null>(null);
   const [totalSalvo, setTotalSalvo] = useState(0);
   const [error, setError] = useState("");
 
@@ -146,16 +154,31 @@ export function OrcamentoForm({ backHref, backLabel = "Voltar" }: OrcamentoFormP
       calcOrcamentoTotal(orcamento.itens, orcamento.desconto, orcamento.valorFinal)
     );
     setOrcamentoId(orcamento.id);
+    setOrcamentoNumero(orcamento.numero);
+    setTokenAssinatura(orcamento.tokenAssinatura || null);
   };
 
   const shareWhatsApp = () => {
     const cliente = clientes.find((c) => c.id === clienteId);
-    const texto = encodeURIComponent(
-      `Orçamento — Total: ${formatCurrency(totalSalvo || total)}\n` +
-        `PDF: ${window.location.origin}/api/pdf/orcamento/${orcamentoId}`
-    );
     const phone = cliente?.telefone?.replace(/\D/g, "") || "";
-    window.open(`https://wa.me/${phone}?text=${texto}`, "_blank");
+    if (!phone || !tokenAssinatura || !cliente) return;
+
+    const texto = buildAssinaturaWhatsAppMessage({
+      tipo: "orcamento",
+      numero: orcamentoNumero,
+      nomeCliente: cliente.nome,
+      token: tokenAssinatura,
+      origin: window.location.origin,
+      total: formatCurrency(totalSalvo || total),
+    });
+
+    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(texto)}`, "_blank");
+  };
+
+  const copyLink = async () => {
+    if (!tokenAssinatura) return;
+    await copiarLinkAssinatura(tokenAssinatura);
+    alert("Link copiado!");
   };
 
   if (orcamentoId) {
@@ -175,8 +198,20 @@ export function OrcamentoForm({ backHref, backLabel = "Voltar" }: OrcamentoFormP
             </a>
             <Button className="w-full" onClick={shareWhatsApp}>
               <MessageCircle className="h-4 w-4" />
-              Enviar por WhatsApp
+              Enviar link para cliente assinar
             </Button>
+            <Button className="w-full" variant="outline" onClick={copyLink}>
+              <Copy className="h-4 w-4" />
+              Copiar link de assinatura
+            </Button>
+            <p className="text-xs text-muted text-center">
+              Também encontra o link em Campo → Orçamentos ou Admin → Orçamentos.
+            </p>
+            {tokenAssinatura && isIpUrl(buildAssinaturaUrl(tokenAssinatura, window.location.origin)) && (
+              <p className="text-xs text-amber-700 text-center">
+                Links com IP podem não ficar azuis no WhatsApp. Use &quot;Copiar link&quot;.
+              </p>
+            )}
             <Link href={backHref}>
               <Button variant="ghost" className="w-full">
                 {backLabel}

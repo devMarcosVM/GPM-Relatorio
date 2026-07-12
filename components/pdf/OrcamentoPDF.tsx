@@ -7,6 +7,7 @@ import {
   PdfPartiesRow,
   PdfSectionBanner,
   PdfAcceptanceFooter,
+  PdfSignatureFooter,
 } from "./PdfParts";
 
 interface OrcamentoPDFProps {
@@ -26,6 +27,7 @@ interface OrcamentoPDFProps {
     valorFinal?: number | null;
     formaPagamento?: string | null;
     observacoes?: string | null;
+    assinaturaCliente?: string | null;
     cliente: {
       nome: string;
       documento?: string | null;
@@ -179,7 +181,17 @@ export function OrcamentoPDF({ empresa, orcamento, absoluteUrl }: OrcamentoPDFPr
           </View>
         )}
 
-        <PdfAcceptanceFooter />
+        {orcamento.assinaturaCliente ? (
+          <PdfSignatureFooter
+            leftTitle="CONTRATADA"
+            leftSubtitle={empresa.razaoSocial}
+            rightTitle="CLIENTE"
+            rightSubtitle={orcamento.cliente.nome}
+            rightSignature={orcamento.assinaturaCliente}
+          />
+        ) : (
+          <PdfAcceptanceFooter />
+        )}
 
         <Text style={pdfStyles.footerNote}>
           {empresa.razaoSocial} — {empresa.telefone} — {empresa.email}

@@ -26,6 +26,8 @@ import {
   MessageCircle,
 } from "lucide-react";
 import { formatDateTime } from "@/lib/utils";
+import { toAssetPath } from "@/lib/assetUrl";
+import { buildAssinaturaWhatsAppMessage } from "@/lib/assinaturaLink";
 import type { OrientacaoFoto } from "@/lib/types";
 
 interface Cliente {
@@ -63,6 +65,7 @@ interface Relatorio {
   dataFim?: string | null;
   assinaturaTecnico?: string | null;
   assinaturaCliente?: string | null;
+  tokenAssinatura?: string | null;
   clienteId?: string | null;
   cliente: {
     id: string;
@@ -215,12 +218,24 @@ export default function AdminRelatorioDetailPage() {
 
   const shareWhatsApp = () => {
     if (!relatorio?.cliente?.telefone) return;
-    const texto = encodeURIComponent(
-      `Relatório de Serviço #${String(relatorio.numero).padStart(4, "0")} — ${relatorio.cliente.nome}\n` +
-        `PDF: ${window.location.origin}/api/pdf/relatorio/${id}`
-    );
     const phone = relatorio.cliente.telefone.replace(/\D/g, "");
-    window.open(`https://wa.me/${phone}?text=${texto}`, "_blank");
+
+    let texto: string;
+    if (relatorio.tokenAssinatura && !relatorio.assinaturaCliente) {
+      texto = buildAssinaturaWhatsAppMessage({
+        tipo: "relatorio",
+        numero: relatorio.numero,
+        nomeCliente: relatorio.cliente.nome,
+        token: relatorio.tokenAssinatura,
+        origin: window.location.origin,
+      });
+    } else {
+      texto =
+        `Relatório de Serviço #${String(relatorio.numero).padStart(4, "0")} — ${relatorio.cliente.nome}\n` +
+        `PDF: ${window.location.origin}/api/pdf/relatorio/${id}`;
+    }
+
+    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(texto)}`, "_blank");
   };
 
   if (loading) {
@@ -283,7 +298,9 @@ export default function AdminRelatorioDetailPage() {
               {relatorio.cliente.telefone && (
                 <Button variant="outline" size="sm" onClick={shareWhatsApp}>
                   <MessageCircle className="h-4 w-4" />
-                  WhatsApp
+                  {relatorio.tokenAssinatura && !relatorio.assinaturaCliente
+                    ? "Link assinatura"
+                    : "WhatsApp"}
                 </Button>
               )}
             </>
@@ -441,9 +458,9 @@ export default function AdminRelatorioDetailPage() {
                       />
                     </div>
                     {fotoAntes ? (
-                      <a href={fotoAntes.url} target="_blank" rel="noopener noreferrer">
+                      <a href={toAssetPath(fotoAntes.url)} target="_blank" rel="noopener noreferrer">
                         <img
-                          src={fotoAntes.url}
+                          src={toAssetPath(fotoAntes.url)}
                           alt="Antes"
                           className="w-full rounded-lg border border-border object-cover max-h-64"
                         />
@@ -467,9 +484,9 @@ export default function AdminRelatorioDetailPage() {
                       />
                     </div>
                     {fotoDepois ? (
-                      <a href={fotoDepois.url} target="_blank" rel="noopener noreferrer">
+                      <a href={toAssetPath(fotoDepois.url)} target="_blank" rel="noopener noreferrer">
                         <img
-                          src={fotoDepois.url}
+                          src={toAssetPath(fotoDepois.url)}
                           alt="Depois"
                           className="w-full rounded-lg border border-border object-cover max-h-64"
                         />

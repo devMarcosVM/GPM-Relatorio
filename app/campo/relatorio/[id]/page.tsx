@@ -22,6 +22,8 @@ import {
   MessageCircle,
 } from "lucide-react";
 import type { OrientacaoFoto, TipoFoto } from "@/lib/types";
+import { toAssetPath } from "@/lib/assetUrl";
+import { buildAssinaturaWhatsAppMessage } from "@/lib/assinaturaLink";
 
 interface Cliente {
   id: string;
@@ -58,6 +60,7 @@ interface Relatorio {
   observacoes?: string | null;
   assinaturaTecnico?: string | null;
   assinaturaCliente?: string | null;
+  tokenAssinatura?: string | null;
   cliente: Cliente | null;
   itens: Item[];
 }
@@ -200,12 +203,25 @@ export default function RelatorioDetailPage() {
 
   const shareWhatsApp = () => {
     if (!relatorio?.cliente) return;
-    const texto = encodeURIComponent(
-      `Relatório de Serviço #${String(relatorio.numero).padStart(4, "0")} — ${relatorio.cliente.nome}\n` +
-        `PDF: ${window.location.origin}/api/pdf/relatorio/${id}`
-    );
     const phone = relatorio.cliente.telefone?.replace(/\D/g, "") || "";
-    window.open(`https://wa.me/${phone}?text=${texto}`, "_blank");
+    if (!phone) return;
+
+    let texto: string;
+    if (relatorio.tokenAssinatura && !relatorio.assinaturaCliente) {
+      texto = buildAssinaturaWhatsAppMessage({
+        tipo: "relatorio",
+        numero: relatorio.numero,
+        nomeCliente: relatorio.cliente.nome,
+        token: relatorio.tokenAssinatura,
+        origin: window.location.origin,
+      });
+    } else {
+      texto =
+        `Relatório de Serviço #${String(relatorio.numero).padStart(4, "0")} — ${relatorio.cliente.nome}\n` +
+        `PDF: ${window.location.origin}/api/pdf/relatorio/${id}`;
+    }
+
+    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(texto)}`, "_blank");
   };
 
   if (!relatorio) {
@@ -238,7 +254,7 @@ export default function RelatorioDetailPage() {
     <div className="min-h-screen bg-slate-50">
       <header className="flex items-center justify-between bg-white border-b px-4 py-3">
         <div className="flex items-center gap-3">
-          <Link href="/campo">
+          <Link href="/campo/relatorios">
             <ArrowLeft className="h-5 w-5" />
           </Link>
           <div>
@@ -314,7 +330,7 @@ export default function RelatorioDetailPage() {
                     >
                       {fotoAntes ? (
                         <img
-                          src={fotoAntes.url}
+                          src={toAssetPath(fotoAntes.url)}
                           alt="Antes"
                           className="h-24 w-full rounded object-cover"
                         />
@@ -332,7 +348,7 @@ export default function RelatorioDetailPage() {
                     >
                       {fotoDepois ? (
                         <img
-                          src={fotoDepois.url}
+                          src={toAssetPath(fotoDepois.url)}
                           alt="Depois"
                           className="h-24 w-full rounded object-cover"
                         />
@@ -446,7 +462,7 @@ export default function RelatorioDetailPage() {
 
             <SignaturePad
               ref={assinaturaClienteRef}
-              label="Assinatura do Cliente (opcional)"
+              label="Assinatura do Cliente (opcional — ou envie link pelo WhatsApp)"
               onSave={setAssinaturaCliente}
             />
 
@@ -488,11 +504,18 @@ export default function RelatorioDetailPage() {
               {relatorio.cliente?.telefone && (
                 <Button className="w-full" onClick={shareWhatsApp}>
                   <MessageCircle className="h-4 w-4" />
-                  Enviar por WhatsApp
+                  {relatorio.tokenAssinatura && !relatorio.assinaturaCliente
+                    ? "Enviar link para cliente assinar"
+                    : "Enviar por WhatsApp"}
                 </Button>
               )}
-              <Button variant="ghost" onClick={() => router.push("/campo")}>
-                Voltar ao Início
+              {relatorio.tokenAssinatura && !relatorio.assinaturaCliente && (
+                <p className="text-xs text-muted">
+                  O cliente assina pelo link — sem precisar de login.
+                </p>
+              )}
+              <Button variant="ghost" onClick={() => router.push("/campo/relatorios")}>
+                Voltar aos Relatórios
               </Button>
             </div>
           </Card>

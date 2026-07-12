@@ -1,9 +1,9 @@
 "use client";
 
-import { useRef, useState, useCallback } from "react";
+import { useRef, useState, useCallback, useEffect } from "react";
 import imageCompression from "browser-image-compression";
 import { Button } from "@/components/ui/button";
-import { Camera, RotateCcw, Check, Smartphone } from "lucide-react";
+import { Camera, RotateCcw, Check, Smartphone, ImagePlus } from "lucide-react";
 import type { OrientacaoFoto, TipoFoto } from "@/lib/types";
 
 interface CameraCaptureProps {
@@ -13,6 +13,37 @@ interface CameraCaptureProps {
   relatorioItemId: string;
   onComplete: (url: string) => void;
   onCancel: () => void;
+}
+
+function canUseLiveCamera() {
+  return typeof window !== "undefined" && window.isSecureContext;
+}
+
+async function compressAndUpload(
+  file: File | Blob,
+  relatorioItemId: string,
+  tipo: TipoFoto,
+  orientacao: OrientacaoFoto
+) {
+  const compressed = await imageCompression(file as File, {
+    maxSizeMB: 0.5,
+    maxWidthOrHeight: 1920,
+    useWebWorker: true,
+  });
+
+  const formData = new FormData();
+  formData.append("file", compressed, "foto.jpg");
+  formData.append("relatorioItemId", relatorioItemId);
+  formData.append("tipo", tipo);
+  formData.append("orientacao", orientacao);
+
+  const uploadRes = await fetch("/api/upload", {
+    method: "POST",
+    body: formData,
+  });
+
+  if (!uploadRes.ok) throw new Error("Falha no upload");
+  return uploadRes.json();
 }
 
 export function CameraCapture({
@@ -25,13 +56,24 @@ export function CameraCapture({
 }: CameraCaptureProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [cameraActive, setCameraActive] = useState(false);
+  const [liveCameraAvailable, setLiveCameraAvailable] = useState(true);
+
+  useEffect(() => {
+    setLiveCameraAvailable(canUseLiveCamera());
+  }, []);
 
   const startCamera = useCallback(async () => {
+    if (!canUseLiveCamera()) {
+      fileInputRef.current?.click();
+      return;
+    }
+
     try {
       setError(null);
       const mediaStream = await navigator.mediaDevices.getUserMedia({
@@ -49,8 +91,16 @@ export function CameraCapture({
           videoRef.current.srcObject = mediaStream;
         }
       }, 100);
-    } catch {
-      setError("Não foi possível acessar a câmera. Verifique as permissões.");
+    } catch (err) {
+      const denied =
+        err instanceof DOMException &&
+        (err.name === "NotAllowedError" || err.name === "PermissionDeniedError");
+
+      if (denied) {
+        setError("Permissão da câmera negada. Libere nas configurações do navegador.");
+      } else {
+        setError("Não foi possível abrir a câmera. Use o botão abaixo para tirar foto.");
+      }
     }
   }, []);
 
@@ -77,7 +127,29 @@ export function CameraCapture({
 
   const retake = () => {
     setPreview(null);
-    startCamera();
+    setError(null);
+    if (liveCameraAvailable) {
+      startCamera();
+    }
+  };
+
+  const handleNativePhoto = async (file: File) => {
+    setError(null);
+    setUploading(true);
+
+    try {
+      const previewUrl = URL.createObjectURL(file);
+      setPreview(previewUrl);
+
+      const foto = await compressAndUpload(file, relatorioItemId, tipo, orientacao);
+      onComplete(foto.url);
+    } catch {
+      setPreview(null);
+      setError("Erro ao enviar foto. Tente novamente.");
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
   };
 
   const upload = async () => {
@@ -88,27 +160,7 @@ export function CameraCapture({
     try {
       const res = await fetch(preview);
       const blob = await res.blob();
-
-      const compressed = await imageCompression(blob as File, {
-        maxSizeMB: 0.5,
-        maxWidthOrHeight: 1920,
-        useWebWorker: true,
-      });
-
-      const formData = new FormData();
-      formData.append("file", compressed, "foto.jpg");
-      formData.append("relatorioItemId", relatorioItemId);
-      formData.append("tipo", tipo);
-      formData.append("orientacao", orientacao);
-
-      const uploadRes = await fetch("/api/upload", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!uploadRes.ok) throw new Error("Falha no upload");
-
-      const foto = await uploadRes.json();
+      const foto = await compressAndUpload(blob, relatorioItemId, tipo, orientacao);
       onComplete(foto.url);
     } catch {
       setError("Erro ao enviar foto. Tente novamente.");
@@ -121,6 +173,18 @@ export function CameraCapture({
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-black">
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        capture="environment"
+        className="hidden"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) handleNativePhoto(file);
+        }}
+      />
+
       <div className="flex items-center justify-between p-4 text-white">
         <button onClick={onCancel} className="text-sm">
           Cancelar
@@ -150,10 +214,34 @@ export function CameraCapture({
               Segure o celular na posição{" "}
               <strong>{isVertical ? "vertical" : "horizontal"}</strong>
             </p>
-            <Button onClick={startCamera} size="lg">
-              <Camera className="h-5 w-5" />
-              Abrir Câmera
-            </Button>
+
+            {!liveCameraAvailable && (
+              <p className="max-w-xs text-center text-xs text-amber-300">
+                Acesso por HTTP (sem HTTPS). Use o botão abaixo — ele abre a câmera nativa do celular.
+              </p>
+            )}
+
+            {liveCameraAvailable ? (
+              <Button onClick={startCamera} size="lg">
+                <Camera className="h-5 w-5" />
+                Abrir Câmera
+              </Button>
+            ) : (
+              <Button onClick={() => fileInputRef.current?.click()} size="lg">
+                <ImagePlus className="h-5 w-5" />
+                Tirar Foto
+              </Button>
+            )}
+
+            {liveCameraAvailable && (
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="text-sm text-sky-300 underline"
+              >
+                Ou usar câmera nativa do celular
+              </button>
+            )}
           </div>
         )}
 
@@ -189,7 +277,18 @@ export function CameraCapture({
       </div>
 
       {error && (
-        <p className="px-4 pb-2 text-center text-sm text-red-400">{error}</p>
+        <div className="px-4 pb-2 text-center">
+          <p className="text-sm text-red-400">{error}</p>
+          {!liveCameraAvailable && (
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="mt-2 text-sm text-sky-300 underline"
+            >
+              Tirar foto com a câmera do celular
+            </button>
+          )}
+        </div>
       )}
 
       <div className="flex justify-center gap-4 p-6">
@@ -202,7 +301,7 @@ export function CameraCapture({
           </button>
         )}
 
-        {preview && (
+        {preview && !uploading && liveCameraAvailable && (
           <>
             <Button variant="outline" onClick={retake} disabled={uploading}>
               <RotateCcw className="h-4 w-4" />
@@ -213,6 +312,10 @@ export function CameraCapture({
               {uploading ? "Enviando..." : "Confirmar"}
             </Button>
           </>
+        )}
+
+        {uploading && (
+          <p className="text-sm text-white">Enviando foto...</p>
         )}
       </div>
     </div>

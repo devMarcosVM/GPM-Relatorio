@@ -67,6 +67,8 @@ model Relatorio {
   observacoes       String?
   assinaturaTecnico String?
   assinaturaCliente String?
+  tokenAssinatura   String?   @unique
+  tokenAssinaturaExpira DateTime?
   clienteId         String?
   cliente           Cliente?        @relation(fields: [clienteId], references: [id])
   tecnicoId         String
@@ -106,6 +108,9 @@ model Orcamento {
   validadeDias   Int             @default(15)
   formaPagamento String?
   observacoes    String?
+  assinaturaCliente String?
+  tokenAssinatura   String?   @unique
+  tokenAssinaturaExpira DateTime?
   clienteId      String
   cliente        Cliente         @relation(fields: [clienteId], references: [id])
   criadoPorId    String

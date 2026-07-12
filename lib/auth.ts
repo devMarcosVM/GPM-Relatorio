@@ -5,6 +5,13 @@ import type { Role } from "./types";
 
 const COOKIE_NAME = "relatorio-session";
 
+function useSecureCookies() {
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "";
+  if (appUrl.startsWith("https://")) return true;
+  if (appUrl.startsWith("http://")) return false;
+  return process.env.NODE_ENV === "production";
+}
+
 export interface SessionUser {
   id: string;
   email: string;
@@ -32,7 +39,7 @@ export async function createSession(user: SessionUser): Promise<void> {
   const cookieStore = await cookies();
   cookieStore.set(COOKIE_NAME, token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: useSecureCookies(),
     sameSite: "lax",
     maxAge: 60 * 60 * 24 * 7,
     path: "/",

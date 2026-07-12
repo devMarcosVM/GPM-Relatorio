@@ -32,8 +32,6 @@ export async function uploadPhoto(
   return `/uploads/${safeName}`;
 }
 
-export function getAbsoluteUrl(relativePath: string): string {
-  if (relativePath.startsWith("http")) return relativePath;
-  const base = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-  return `${base}${relativePath}`;
+export function getUploadDir() {
+  return UPLOAD_DIR;
 }

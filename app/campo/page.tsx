@@ -3,30 +3,25 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { FileText, Plus, ClipboardList, LogOut, Receipt } from "lucide-react";
-import { formatDate } from "@/lib/utils";
-
-interface Relatorio {
-  id: string;
-  numero: number;
-  status: string;
-  createdAt: string;
-  cliente: { nome: string } | null;
-}
+import { FileText, Receipt, LogOut, ChevronRight, Plus } from "lucide-react";
 
 export default function CampoHomePage() {
   const router = useRouter();
   const [user, setUser] = useState<{ nome: string } | null>(null);
-  const [relatorios, setRelatorios] = useState<Relatorio[]>([]);
+  const [counts, setCounts] = useState({ relatorios: 0, orcamentos: 0 });
 
   useEffect(() => {
     fetch("/api/auth/me").then((r) => r.json()).then((d) => setUser(d.user));
-    fetch("/api/relatorios?mine=true")
-      .then((r) => r.json())
-      .then(setRelatorios);
+    Promise.all([
+      fetch("/api/relatorios?mine=true").then((r) => r.json()),
+      fetch("/api/orcamentos?mine=true").then((r) => r.json()),
+    ]).then(([relatorios, orcamentos]) => {
+      setCounts({
+        relatorios: Array.isArray(relatorios) ? relatorios.length : 0,
+        orcamentos: Array.isArray(orcamentos) ? orcamentos.length : 0,
+      });
+    });
   }, []);
 
   const logout = async () => {
@@ -49,58 +44,67 @@ export default function CampoHomePage() {
       </header>
 
       <main className="mx-auto max-w-lg space-y-6 p-4">
-        <div className="grid grid-cols-2 gap-3">
-          <Link href="/campo/relatorio/novo">
-            <Card className="flex flex-col items-center gap-2 py-6 hover:border-primary transition-colors cursor-pointer">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-sky-100 text-primary">
-                <Plus className="h-6 w-6" />
-              </div>
-              <span className="text-sm font-medium">Novo Relatório</span>
-            </Card>
-          </Link>
-          <Link href="/campo/orcamento/novo">
-            <Card className="flex flex-col items-center gap-2 py-6 hover:border-primary transition-colors cursor-pointer">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-green-100 text-green-700">
-                <Receipt className="h-6 w-6" />
-              </div>
-              <span className="text-sm font-medium">Novo Orçamento</span>
-            </Card>
-          </Link>
-        </div>
+        <section>
+          <h2 className="mb-3 text-sm font-medium text-muted">Ações rápidas</h2>
+          <div className="grid grid-cols-2 gap-3">
+            <Link href="/campo/relatorio/novo">
+              <Card className="flex flex-col items-center gap-3 py-6 hover:border-primary transition-colors cursor-pointer">
+                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-sky-100 text-primary">
+                  <Plus className="h-7 w-7" />
+                </div>
+                <div className="text-center">
+                  <p className="text-sm font-semibold">Novo Relatório</p>
+                  <p className="mt-0.5 text-xs text-muted">Fotos e assinatura</p>
+                </div>
+              </Card>
+            </Link>
+            <Link href="/campo/orcamento/novo">
+              <Card className="flex flex-col items-center gap-3 py-6 hover:border-primary transition-colors cursor-pointer">
+                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-green-100 text-green-700">
+                  <Plus className="h-7 w-7" />
+                </div>
+                <div className="text-center">
+                  <p className="text-sm font-semibold">Novo Orçamento</p>
+                  <p className="mt-0.5 text-xs text-muted">Enviar ao cliente</p>
+                </div>
+              </Card>
+            </Link>
+          </div>
+        </section>
 
         <section>
-          <h2 className="mb-3 flex items-center gap-2 font-semibold">
-            <ClipboardList className="h-5 w-5" />
-            Meus Relatórios
-          </h2>
+          <h2 className="mb-3 text-sm font-medium text-muted">Meus registros</h2>
+          <div className="space-y-3">
+            <Link href="/campo/relatorios">
+              <Card className="flex items-center gap-4 p-5 hover:border-primary transition-colors cursor-pointer">
+                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-sky-100 text-primary">
+                  <FileText className="h-7 w-7" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-lg font-semibold">Relatórios</p>
+                  <p className="text-sm text-muted">
+                    {counts.relatorios} relatório(s) — ver e editar
+                  </p>
+                </div>
+                <ChevronRight className="h-5 w-5 text-muted" />
+              </Card>
+            </Link>
 
-          {relatorios.length === 0 ? (
-            <Card className="text-center py-8 text-muted text-sm">
-              Nenhum relatório ainda
-            </Card>
-          ) : (
-            <div className="space-y-2">
-              {relatorios.map((r) => (
-                <Link key={r.id} href={`/campo/relatorio/${r.id}`}>
-                  <Card className="flex items-center justify-between hover:border-primary transition-colors cursor-pointer">
-                    <div className="flex items-center gap-3">
-                      <FileText className="h-5 w-5 text-primary" />
-                      <div>
-                        <p className="font-medium">
-                          #{String(r.numero).padStart(4, "0")} —{" "}
-                          {r.cliente?.nome || "Cliente pendente"}
-                        </p>
-                        <p className="text-xs text-muted">{formatDate(r.createdAt)}</p>
-                      </div>
-                    </div>
-                    <Badge variant={r.status === "FINALIZADO" ? "success" : "warning"}>
-                      {r.status === "FINALIZADO" ? "Finalizado" : "Rascunho"}
-                    </Badge>
-                  </Card>
-                </Link>
-              ))}
-            </div>
-          )}
+            <Link href="/campo/orcamentos">
+              <Card className="flex items-center gap-4 p-5 hover:border-primary transition-colors cursor-pointer">
+                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-green-100 text-green-700">
+                  <Receipt className="h-7 w-7" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-lg font-semibold">Orçamentos</p>
+                  <p className="text-sm text-muted">
+                    {counts.orcamentos} orçamento(s) — ver e enviar link
+                  </p>
+                </div>
+                <ChevronRight className="h-5 w-5 text-muted" />
+              </Card>
+            </Link>
+          </div>
         </section>
       </main>
     </div>

@@ -7,14 +7,18 @@ export async function POST(request: NextRequest) {
   try {
     const { email, password } = await request.json();
 
-    if (!email || !password) {
+    const normalizedEmail = String(email || "")
+      .trim()
+      .toLowerCase();
+
+    if (!normalizedEmail || !password) {
       return NextResponse.json(
         { error: "E-mail e senha são obrigatórios" },
         { status: 400 }
       );
     }
 
-    const user = await prisma.user.findUnique({ where: { email } });
+    const user = await prisma.user.findUnique({ where: { email: normalizedEmail } });
 
     if (!user || !(await bcrypt.compare(password, user.password))) {
       return NextResponse.json(

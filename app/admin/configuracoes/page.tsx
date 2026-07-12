@@ -20,6 +20,7 @@ import {
   isEmpresaConfigured,
   validateEmpresa,
 } from "@/lib/empresa";
+import { toAssetPath } from "@/lib/assetUrl";
 
 interface Empresa {
   id: string;
@@ -268,7 +269,7 @@ export default function ConfiguracoesPage() {
               <div className="space-y-3">
                 <div className="flex items-center justify-center rounded-lg border border-border bg-slate-50 p-6">
                   <img
-                    src={form.logoUrl}
+                    src={toAssetPath(form.logoUrl)}
                     alt="Logo da empresa"
                     className="max-h-24 max-w-full object-contain"
                   />
@@ -315,7 +316,7 @@ export default function ConfiguracoesPage() {
             <div className="rounded-lg border border-border p-4 text-sm">
               {form.logoUrl && (
                 <img
-                  src={form.logoUrl}
+                  src={toAssetPath(form.logoUrl)}
                   alt=""
                   className="mb-3 h-10 object-contain"
                 />

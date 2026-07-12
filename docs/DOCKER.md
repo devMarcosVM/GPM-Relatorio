@@ -84,6 +84,72 @@ npm run docker:dev     # só PostgreSQL
 
 ---
 
+## Teste no celular (rede de casa)
+
+### 1. Subir banco + app
+
+**Terminal 1 — PostgreSQL (se não tiver Postgres local):**
+```bash
+npm run docker:dev
+```
+
+**Terminal 2 — app acessível na rede:**
+```bash
+npm run dev:lan
+```
+
+O terminal deve mostrar:
+```
+Network: http://192.168.x.x:3000
+```
+
+### 2. `.env` — use o IP do notebook
+
+```bash
+hostname -I   # primeiro IP, ex.: 192.168.1.25
+```
+
+```env
+NEXT_PUBLIC_APP_URL=http://192.168.1.25:3000
+```
+
+Reinicie o `npm run dev:lan` após alterar o `.env`.
+
+### 3. No celular
+
+- Mesmo **Wi‑Fi** do notebook (não use 4G/5G)
+- Abra **`http://192.168.1.25:3000`** (com `http`, sem `s`)
+- Se pedir login: `tecnico@empresa.com` / `tecnico123`
+
+### 4. Se não abrir no celular
+
+| Sintoma | O que fazer |
+|---------|-------------|
+| Timeout / não carrega | Router com **AP isolation** — celular não enxerga o PC. Desative em configurações do Wi‑Fi ou use Tailscale (abaixo) |
+| Só funciona no PC | Confirme firewall: `sudo ufw allow 3000` |
+| Página abre, login falha | Postgres parado — rode `npm run docker:dev` |
+| Câmera não abre | Normal em HTTP — use Tailscale ou túnel HTTPS (abaixo) |
+
+### 5. Alternativa: Tailscale (funciona fora de casa)
+
+Seu notebook já tem IP Tailscale (`100.x.x.x` no `hostname -I`):
+
+1. Instale [Tailscale](https://tailscale.com) no celular e entre na mesma conta
+2. No celular abra: `http://100.x.x.x:3000` (seu IP Tailscale)
+3. Atualize `NEXT_PUBLIC_APP_URL` com esse IP
+
+### 6. HTTPS rápido (câmera no celular)
+
+```bash
+npm run dev:lan
+# outro terminal:
+npx cloudflared tunnel --url http://localhost:3000
+```
+
+Use a URL `https://....trycloudflare.com` no celular e em `NEXT_PUBLIC_APP_URL`.
+
+---
+
 ## Produção
 
 1. Defina `AUTH_SECRET` forte e `NEXT_PUBLIC_APP_URL` com o domínio real
