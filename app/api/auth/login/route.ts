@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
       email: user.email,
       nome: user.nome,
       role: user.role as "TECNICO" | "ADMIN",
-      sessionVersion: user.sessionVersion,
+      sessionVersion: user.sessionVersion ?? 0,
     });
 
     return NextResponse.json({
@@ -43,7 +43,8 @@ export async function POST(request: NextRequest) {
         role: user.role,
       },
     });
-  } catch {
+  } catch (error) {
+    console.error("[auth/login]", error);
     return NextResponse.json({ error: "Erro interno" }, { status: 500 });
   }
 }
