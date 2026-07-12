@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { jwtVerify } from "jose";
-
-const COOKIE_NAME = "relatorio-session";
+import { COOKIE_NAME } from "@/lib/auth";
 
 const publicPaths = ["/login", "/manifest.json", "/sw.js", "/icon.svg", "/assinar"];
 
@@ -12,15 +11,33 @@ function getSecret() {
   );
 }
 
-async function verifyToken(token: string) {
+async function verifyTokenSignature(token: string) {
   const { payload } = await jwtVerify(token, getSecret());
   return payload;
+}
+
+async function isSessionActive(request: NextRequest): Promise<boolean> {
+  const validateUrl = new URL("/api/auth/validate-session", request.url);
+  const res = await fetch(validateUrl, {
+    headers: {
+      cookie: request.headers.get("cookie") ?? "",
+    },
+    cache: "no-store",
+  });
+  return res.ok;
+}
+
+function redirectToLogin(request: NextRequest, deleteCookie = false) {
+  const response = NextResponse.redirect(new URL("/login", request.url));
+  if (deleteCookie) {
+    response.cookies.delete(COOKIE_NAME);
+  }
+  return response;
 }
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // PWA desativado em desenvolvimento — evita loop de recarregamento
   if (
     process.env.NODE_ENV === "development" &&
     (pathname === "/sw.js" || pathname === "/manifest.json")
@@ -31,23 +48,27 @@ export async function middleware(request: NextRequest) {
   const isPublic =
     publicPaths.some((p) => pathname === p || pathname.startsWith(`${p}/`)) ||
     pathname.startsWith("/api/auth/login") ||
+    pathname.startsWith("/api/auth/validate-session") ||
     pathname.startsWith("/api/assinar/") ||
     pathname.startsWith("/uploads/") ||
     pathname.startsWith("/api/media/") ||
     pathname.startsWith("/_next/");
 
   const token = request.cookies.get(COOKIE_NAME)?.value;
+  const isApi = pathname.startsWith("/api/");
 
-  // Usuário logado não precisa ficar na tela de login
   if (pathname.startsWith("/login") && token) {
     try {
-      await verifyToken(token);
-      return NextResponse.redirect(new URL("/", request.url));
+      await verifyTokenSignature(token);
+      if (await isSessionActive(request)) {
+        return NextResponse.redirect(new URL("/", request.url));
+      }
     } catch {
-      const response = NextResponse.next();
-      response.cookies.delete(COOKIE_NAME);
-      return response;
+      // segue para a tela de login
     }
+    const response = NextResponse.next();
+    response.cookies.delete(COOKIE_NAME);
+    return response;
   }
 
   if (isPublic) {
@@ -55,14 +76,22 @@ export async function middleware(request: NextRequest) {
   }
 
   if (!token) {
-    if (pathname.startsWith("/api/")) {
+    if (isApi) {
       return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
     }
-    return NextResponse.redirect(new URL("/login", request.url));
+    return redirectToLogin(request);
   }
 
   try {
-    const payload = await verifyToken(token);
+    const payload = await verifyTokenSignature(token);
+
+    if (!isApi) {
+      const active = await isSessionActive(request);
+      if (!active) {
+        return redirectToLogin(request, true);
+      }
+    }
+
     const role = payload.role as string;
 
     if (pathname.startsWith("/admin") && role !== "ADMIN") {
@@ -71,16 +100,11 @@ export async function middleware(request: NextRequest) {
 
     return NextResponse.next();
   } catch {
-    const response = pathname.startsWith("/api/")
-      ? NextResponse.json({ error: "Sessão inválida" }, { status: 401 })
-      : NextResponse.redirect(new URL("/login", request.url));
-
-    // Remove cookie inválido para evitar loop de redirect
-    if (!pathname.startsWith("/api/")) {
-      response.cookies.delete(COOKIE_NAME);
+    if (isApi) {
+      const response = NextResponse.json({ error: "Sessão inválida" }, { status: 401 });
+      return response;
     }
-
-    return response;
+    return redirectToLogin(request, true);
   }
 }
 

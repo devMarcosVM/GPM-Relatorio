@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/db";
-import { requireAdmin, getSession } from "@/lib/auth";
+import { requireAdmin } from "@/lib/auth";
 import type { Role } from "@/lib/types";
 
 export async function PUT(
@@ -62,7 +62,10 @@ export async function PUT(
 
     const updated = await prisma.user.update({
       where: { id },
-      data: updateData,
+      data: {
+        ...updateData,
+        ...(password?.trim() ? { sessionVersion: { increment: 1 } } : {}),
+      },
       select: {
         id: true,
         email: true,

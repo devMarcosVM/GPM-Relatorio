@@ -13,15 +13,16 @@ datasource db {
 }
 
 model User {
-  id         String      @id @default(cuid())
-  email      String      @unique
-  password   String
-  nome       String
-  role       String      @default("TECNICO")
-  createdAt  DateTime    @default(now())
-  updatedAt  DateTime    @updatedAt
-  relatorios Relatorio[]
-  orcamentos Orcamento[]
+  id             String      @id @default(cuid())
+  email          String      @unique
+  password       String
+  nome           String
+  role           String      @default("TECNICO")
+  sessionVersion Int         @default(0)
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  relatorios     Relatorio[]
+  orcamentos     Orcamento[]
 }
 
 model Empresa {

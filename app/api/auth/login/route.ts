@@ -32,6 +32,7 @@ export async function POST(request: NextRequest) {
       email: user.email,
       nome: user.nome,
       role: user.role as "TECNICO" | "ADMIN",
+      sessionVersion: user.sessionVersion,
     });
 
     return NextResponse.json({
