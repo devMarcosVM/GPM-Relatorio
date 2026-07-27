@@ -30,8 +30,8 @@ export function ListFilters({
 
   return (
     <Card className="space-y-3">
-      <div className="grid gap-3 md:grid-cols-[1fr_auto_auto_auto] md:items-end">
-        <div>
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[1fr_auto_auto_auto] lg:items-end">
+        <div className="sm:col-span-2 lg:col-span-1">
           <label className="mb-1 block text-xs font-medium text-muted">
             Buscar
           </label>
@@ -71,7 +71,7 @@ export function ListFilters({
             variant="outline"
             onClick={onClear}
             disabled={!hasFilters}
-            className="w-full md:w-auto"
+            className="w-full sm:col-span-2 lg:col-span-1 lg:w-auto"
           >
             <X className="h-4 w-4" />
             Limpar

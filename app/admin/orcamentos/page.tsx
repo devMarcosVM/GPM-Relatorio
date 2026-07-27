@@ -151,7 +151,7 @@ export default function OrcamentosAdminPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Orçamentos</h1>
+          <h1 className="text-xl font-bold sm:text-2xl">Orçamentos</h1>
           <p className="text-sm text-muted">
             {filtered.length} de {orcamentos.length} registro(s)
             {filtered.length > 0 && (
@@ -159,8 +159,8 @@ export default function OrcamentosAdminPage() {
             )}
           </p>
         </div>
-        <Link href="/admin/orcamentos/novo">
-          <Button>
+        <Link href="/admin/orcamentos/novo" className="w-full sm:w-auto">
+          <Button className="w-full sm:w-auto">
             <Plus className="h-4 w-4" />
             Novo Orçamento
           </Button>
@@ -220,7 +220,7 @@ export default function OrcamentosAdminPage() {
                   <Select
                     value={o.status}
                     onChange={(e) => updateStatus(o.id, e.target.value)}
-                    className="w-36"
+                    className="w-full sm:w-36"
                   >
                     <option value="RASCUNHO">Rascunho</option>
                     <option value="PENDENTE">Pendente</option>
@@ -248,10 +248,10 @@ export default function OrcamentosAdminPage() {
                         {copiedId === o.id ? (
                           <>
                             <Check className="h-4 w-4" />
-                            Link copiado
+                            <span className="hidden sm:inline">Link copiado</span>
                           </>
                         ) : copyErrorId === o.id ? (
-                          "Erro ao copiar"
+                          "Erro"
                         ) : (
                           <Copy className="h-4 w-4" />
                         )}
@@ -259,8 +259,8 @@ export default function OrcamentosAdminPage() {
                     </>
                   )}
                   {o.status === "RASCUNHO" && (
-                    <Link href={`/admin/orcamentos/${o.id}/editar`}>
-                      <Button variant="outline" size="sm">
+                    <Link href={`/admin/orcamentos/${o.id}/editar`} className="flex-1 sm:flex-none">
+                      <Button variant="outline" size="sm" className="w-full sm:w-auto">
                         Continuar
                       </Button>
                     </Link>

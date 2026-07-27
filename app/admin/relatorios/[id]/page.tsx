@@ -271,8 +271,8 @@ export default function AdminRelatorioDetailPage() {
             </Button>
           </Link>
           <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-bold">
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="text-xl font-bold sm:text-2xl">
                 Relatório #{String(relatorio.numero).padStart(4, "0")}
               </h1>
               <Badge
@@ -298,7 +298,7 @@ export default function AdminRelatorioDetailPage() {
           </div>
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {relatorio.status === "FINALIZADO" && relatorio.cliente && (
             <>
               <a href={`/api/pdf/relatorio/${id}`} target="_blank">

@@ -113,14 +113,15 @@ export default function ClientesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Clientes</h1>
+          <h1 className="text-xl font-bold sm:text-2xl">Clientes</h1>
           <p className="text-sm text-muted">
             {filtered.length} de {clientes.length} registro(s)
           </p>
         </div>
         <Button
+          className="w-full sm:w-auto"
           onClick={() => {
             setForm(emptyCliente);
             setEditingId(null);
@@ -191,9 +192,15 @@ export default function ClientesPage() {
               {formError}
             </p>
           )}
-          <div className="flex gap-2">
-            <Button onClick={save}>Salvar</Button>
-            <Button variant="outline" onClick={() => setShowForm(false)}>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Button className="w-full sm:w-auto" onClick={save}>
+              Salvar
+            </Button>
+            <Button
+              className="w-full sm:w-auto"
+              variant="outline"
+              onClick={() => setShowForm(false)}
+            >
               Cancelar
             </Button>
           </div>
@@ -209,24 +216,35 @@ export default function ClientesPage() {
       ) : (
         <div className="space-y-2">
           {filtered.map((c) => (
-            <Card key={c.id} className="flex items-center justify-between">
-              <div>
-                <p className="font-medium">{c.nome}</p>
-                <p className="text-sm text-muted">
+            <Card
+              key={c.id}
+              className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"
+            >
+              <div className="min-w-0">
+                <p className="font-medium break-words">{c.nome}</p>
+                <p className="text-sm text-muted break-words">
                   {[c.documento, c.telefone, c.email].filter(Boolean).join(" • ")}
                 </p>
                 {c.endereco && (
-                  <p className="text-xs text-muted">{c.endereco}</p>
+                  <p className="text-xs text-muted break-words">{c.endereco}</p>
                 )}
                 <p className="text-xs text-muted mt-1">
                   Cadastrado em {formatDate(c.createdAt)}
                 </p>
               </div>
-              <div className="flex gap-2">
-                <button onClick={() => edit(c)} className="text-primary">
+              <div className="flex shrink-0 gap-2">
+                <button
+                  onClick={() => edit(c)}
+                  className="rounded-lg p-2 text-primary hover:bg-sky-50"
+                  aria-label="Editar"
+                >
                   <Pencil className="h-4 w-4" />
                 </button>
-                <button onClick={() => remove(c.id)} className="text-red-500">
+                <button
+                  onClick={() => remove(c.id)}
+                  className="rounded-lg p-2 text-red-500 hover:bg-red-50"
+                  aria-label="Excluir"
+                >
                   <Trash2 className="h-4 w-4" />
                 </button>
               </div>

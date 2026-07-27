@@ -101,9 +101,10 @@ export default function CatalogoPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Catálogo de Serviços</h1>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <h1 className="text-xl font-bold sm:text-2xl">Catálogo de Serviços</h1>
         <Button
+          className="w-full sm:w-auto"
           onClick={() => {
             setForm(emptyServico);
             setEditingId(null);
@@ -168,9 +169,15 @@ export default function CatalogoPage() {
               rows={3}
             />
           </div>
-          <div className="flex gap-2">
-            <Button onClick={save}>Salvar</Button>
-            <Button variant="outline" onClick={() => setShowForm(false)}>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Button className="w-full sm:w-auto" onClick={save}>
+              Salvar
+            </Button>
+            <Button
+              className="w-full sm:w-auto"
+              variant="outline"
+              onClick={() => setShowForm(false)}
+            >
               Cancelar
             </Button>
           </div>
@@ -179,10 +186,13 @@ export default function CatalogoPage() {
 
       <div className="space-y-2">
         {servicos.map((s) => (
-          <Card key={s.id} className="flex items-center justify-between">
-            <div>
-              <div className="flex items-center gap-2">
-                <p className="font-medium">{s.nome}</p>
+          <Card
+            key={s.id}
+            className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"
+          >
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="font-medium break-words">{s.nome}</p>
                 <Badge variant="info">
                   {s.orientacaoFoto === "VERTICAL" ? "Vertical" : "Horizontal"}
                 </Badge>
@@ -191,14 +201,22 @@ export default function CatalogoPage() {
                 {formatPrecoUnitario(s.preco, normalizeUnidade(s.unidade))}
               </p>
               {s.descricao && (
-                <p className="text-xs text-muted">{s.descricao}</p>
+                <p className="text-xs text-muted break-words">{s.descricao}</p>
               )}
             </div>
-            <div className="flex gap-2">
-              <button onClick={() => edit(s)} className="text-primary">
+            <div className="flex shrink-0 gap-2">
+              <button
+                onClick={() => edit(s)}
+                className="rounded-lg p-2 text-primary hover:bg-sky-50"
+                aria-label="Editar"
+              >
                 <Pencil className="h-4 w-4" />
               </button>
-              <button onClick={() => remove(s.id)} className="text-red-500">
+              <button
+                onClick={() => remove(s.id)}
+                className="rounded-lg p-2 text-red-500 hover:bg-red-50"
+                aria-label="Excluir"
+              >
                 <Trash2 className="h-4 w-4" />
               </button>
             </div>

@@ -71,13 +71,13 @@ export default function RelatoriosAdminPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Relatórios</h1>
+          <h1 className="text-xl font-bold sm:text-2xl">Relatórios</h1>
           <p className="text-sm text-muted">
             {filtered.length} de {relatorios.length} registro(s)
           </p>
         </div>
-        <Link href="/admin/relatorios/novo">
-          <Button>
+        <Link href="/admin/relatorios/novo" className="w-full sm:w-auto">
+          <Button className="w-full sm:w-auto">
             <Plus className="h-4 w-4" />
             Novo Relatório
           </Button>
@@ -135,16 +135,16 @@ export default function RelatoriosAdminPage() {
                     {r.itens.reduce((sum, i) => sum + i.fotos.length, 0)} foto(s)
                   </p>
                 </Link>
-                <div className="flex gap-2">
-                  <Link href={`/admin/relatorios/${r.id}`}>
-                    <Button variant="outline" size="sm">
+                <div className="flex flex-wrap gap-2">
+                  <Link href={`/admin/relatorios/${r.id}`} className="flex-1 sm:flex-none">
+                    <Button variant="outline" size="sm" className="w-full sm:w-auto">
                       <Eye className="h-4 w-4" />
                       Ver
                     </Button>
                   </Link>
                   {r.status === "FINALIZADO" && r.cliente && (
-                    <a href={`/api/pdf/relatorio/${r.id}`} target="_blank">
-                      <Button variant="outline" size="sm">
+                    <a href={`/api/pdf/relatorio/${r.id}`} target="_blank" className="flex-1 sm:flex-none">
+                      <Button variant="outline" size="sm" className="w-full sm:w-auto">
                         <Download className="h-4 w-4" />
                         PDF
                       </Button>

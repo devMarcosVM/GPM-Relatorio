@@ -12,6 +12,8 @@ import {
   Receipt,
   Settings,
   LogOut,
+  Menu,
+  X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { EmpresaSetupBanner } from "@/components/empresa/EmpresaSetupBanner";
@@ -26,6 +28,42 @@ const navItems = [
   { href: "/admin/configuracoes", label: "Configurações", icon: Settings },
 ];
 
+function NavLinks({
+  pathname,
+  onNavigate,
+  className,
+}: {
+  pathname: string;
+  onNavigate?: () => void;
+  className?: string;
+}) {
+  return (
+    <nav className={cn("flex-1 space-y-1 p-3", className)}>
+      {navItems.map((item) => {
+        const Icon = item.icon;
+        const active =
+          pathname === item.href || pathname.startsWith(`${item.href}/`);
+        return (
+          <Link
+            key={item.href}
+            href={item.href}
+            onClick={onNavigate}
+            className={cn(
+              "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors",
+              active
+                ? "bg-primary text-white"
+                : "text-slate-300 hover:bg-slate-800"
+            )}
+          >
+            <Icon className="h-4 w-4 shrink-0" />
+            {item.label}
+          </Link>
+        );
+      })}
+    </nav>
+  );
+}
+
 export default function AdminLayout({
   children,
 }: {
@@ -34,6 +72,7 @@ export default function AdminLayout({
   const pathname = usePathname();
   const router = useRouter();
   const [user, setUser] = useState<{ nome: string } | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     fetch("/api/auth/me")
@@ -47,38 +86,38 @@ export default function AdminLayout({
       });
   }, [router]);
 
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [menuOpen]);
+
   const logout = async () => {
     await fetch("/api/auth/logout", { method: "POST" });
     router.push("/login");
   };
 
+  const currentLabel =
+    navItems.find(
+      (item) => pathname === item.href || pathname.startsWith(`${item.href}/`)
+    )?.label ?? "Admin";
+
   return (
-    <div className="flex min-h-screen">
-      <aside className="hidden w-64 flex-col bg-slate-900 text-white md:flex">
+    <div className="flex min-h-screen min-h-dvh">
+      {/* Desktop sidebar */}
+      <aside className="hidden w-64 shrink-0 flex-col bg-slate-900 text-white md:flex">
         <div className="border-b border-slate-700 p-4">
           <h1 className="font-bold">Relatórios</h1>
           <p className="text-xs text-slate-400">{user?.nome}</p>
         </div>
-        <nav className="flex-1 space-y-1 p-3">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
-                  pathname === item.href
-                    ? "bg-primary text-white"
-                    : "text-slate-300 hover:bg-slate-800"
-                )}
-              >
-                <Icon className="h-4 w-4" />
-                {item.label}
-              </Link>
-            );
-          })}
-        </nav>
+        <NavLinks pathname={pathname} />
         <button
           onClick={logout}
           className="flex items-center gap-3 border-t border-slate-700 p-4 text-sm text-slate-400 hover:text-white"
@@ -88,32 +127,69 @@ export default function AdminLayout({
         </button>
       </aside>
 
-      <div className="flex-1">
-        <header className="flex items-center justify-between border-b bg-white px-4 py-3 md:hidden">
-          <h1 className="font-semibold">Admin</h1>
-          <button onClick={logout}>
+      {/* Mobile drawer */}
+      {menuOpen && (
+        <div className="fixed inset-0 z-50 md:hidden">
+          <button
+            type="button"
+            aria-label="Fechar menu"
+            className="absolute inset-0 bg-black/50"
+            onClick={() => setMenuOpen(false)}
+          />
+          <aside className="absolute inset-y-0 left-0 flex w-[min(18rem,85vw)] flex-col bg-slate-900 text-white shadow-xl">
+            <div className="flex items-center justify-between border-b border-slate-700 p-4">
+              <div>
+                <h1 className="font-bold">Relatórios</h1>
+                <p className="text-xs text-slate-400">{user?.nome}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setMenuOpen(false)}
+                className="rounded-lg p-2 text-slate-300 hover:bg-slate-800"
+                aria-label="Fechar"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <NavLinks pathname={pathname} onNavigate={() => setMenuOpen(false)} />
+            <button
+              onClick={logout}
+              className="flex items-center gap-3 border-t border-slate-700 p-4 text-sm text-slate-400 hover:text-white"
+            >
+              <LogOut className="h-4 w-4" />
+              Sair
+            </button>
+          </aside>
+        </div>
+      )}
+
+      <div className="flex min-w-0 flex-1 flex-col">
+        <header className="sticky top-0 z-40 flex items-center justify-between gap-3 border-b bg-white/95 px-3 py-3 backdrop-blur md:hidden supports-[backdrop-filter]:bg-white/80">
+          <button
+            type="button"
+            onClick={() => setMenuOpen(true)}
+            className="rounded-lg p-2 hover:bg-slate-100"
+            aria-label="Abrir menu"
+          >
+            <Menu className="h-5 w-5" />
+          </button>
+          <div className="min-w-0 flex-1 text-center">
+            <p className="truncate text-sm font-semibold">{currentLabel}</p>
+            {user?.nome && (
+              <p className="truncate text-xs text-muted">{user.nome}</p>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={logout}
+            className="rounded-lg p-2 hover:bg-slate-100"
+            aria-label="Sair"
+          >
             <LogOut className="h-5 w-5" />
           </button>
         </header>
 
-        <nav className="flex overflow-x-auto border-b bg-white px-2 py-1 md:hidden">
-          {navItems.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                "whitespace-nowrap rounded-lg px-3 py-2 text-xs font-medium",
-                pathname === item.href
-                  ? "bg-primary text-white"
-                  : "text-slate-600"
-              )}
-            >
-              {item.label}
-            </Link>
-          ))}
-        </nav>
-
-        <main className="p-4 md:p-6">
+        <main className="min-w-0 flex-1 overflow-x-hidden p-3 sm:p-4 md:p-6">
           <EmpresaSetupBanner />
           {children}
         </main>

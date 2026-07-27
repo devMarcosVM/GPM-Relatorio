@@ -143,8 +143,8 @@ export default function ConfiguracoesPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold flex items-center gap-2">
-          <Building2 className="h-7 w-7" />
+        <h1 className="text-xl font-bold flex items-center gap-2 sm:text-2xl">
+          <Building2 className="h-6 w-6 sm:h-7 sm:w-7 shrink-0" />
           Dados da Empresa
         </h1>
         <p className="text-sm text-muted mt-1">
@@ -343,7 +343,7 @@ export default function ConfiguracoesPage() {
       </div>
 
       <Card className="max-w-2xl">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="font-medium flex items-center gap-2">
               <UserCog className="h-5 w-5" />
@@ -353,8 +353,8 @@ export default function ConfiguracoesPage() {
               Cadastre técnicos e administradores
             </p>
           </div>
-          <Link href="/admin/usuarios">
-            <Button variant="outline" size="sm">
+          <Link href="/admin/usuarios" className="w-full sm:w-auto">
+            <Button variant="outline" size="sm" className="w-full sm:w-auto">
               <ExternalLink className="h-4 w-4" />
               Gerenciar
             </Button>

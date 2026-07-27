@@ -854,7 +854,7 @@ export function OrcamentoFormHeader({
           <ArrowLeft className="h-4 w-4" />
         </Button>
       </Link>
-      <h1 className="text-2xl font-bold">{title}</h1>
+      <h1 className="text-xl font-bold sm:text-2xl">{title}</h1>
     </div>
   );
 }

@@ -122,17 +122,17 @@ export default function UsuariosPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <UserCog className="h-7 w-7" />
+          <h1 className="text-xl font-bold flex items-center gap-2 sm:text-2xl">
+            <UserCog className="h-6 w-6 sm:h-7 sm:w-7" />
             Usuários
           </h1>
           <p className="text-sm text-muted mt-1">
             Gerencie técnicos de campo e administradores do escritório
           </p>
         </div>
-        <Button onClick={openCreate}>
+        <Button className="w-full sm:w-auto shrink-0" onClick={openCreate}>
           <Plus className="h-4 w-4" />
           Novo Usuário
         </Button>
@@ -187,11 +187,15 @@ export default function UsuariosPage() {
 
           {error && <p className="text-sm text-red-600">{error}</p>}
 
-          <div className="flex gap-2">
-            <Button onClick={save} disabled={loading}>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Button className="w-full sm:w-auto" onClick={save} disabled={loading}>
               {loading ? "Salvando..." : "Salvar"}
             </Button>
-            <Button variant="outline" onClick={() => setShowForm(false)}>
+            <Button
+              className="w-full sm:w-auto"
+              variant="outline"
+              onClick={() => setShowForm(false)}
+            >
               Cancelar
             </Button>
           </div>
@@ -200,15 +204,15 @@ export default function UsuariosPage() {
 
       <div className="space-y-2">
         {usuarios.map((u) => (
-          <Card key={u.id} className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-            <div>
-              <div className="flex items-center gap-2">
-                <p className="font-medium">{u.nome}</p>
+          <Card key={u.id} className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="font-medium break-words">{u.nome}</p>
                 <Badge variant={u.role === "ADMIN" ? "info" : "default"}>
                   {u.role === "ADMIN" ? "Admin" : "Técnico"}
                 </Badge>
               </div>
-              <p className="text-sm text-muted">{u.email}</p>
+              <p className="text-sm text-muted break-all">{u.email}</p>
               <p className="text-xs text-muted">
                 Cadastrado em {formatDate(u.createdAt)}
                 {u._count && (
@@ -217,7 +221,12 @@ export default function UsuariosPage() {
               </p>
             </div>
             <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={() => openEdit(u)}>
+              <Button
+                className="flex-1 sm:flex-none"
+                variant="outline"
+                size="sm"
+                onClick={() => openEdit(u)}
+              >
                 <Pencil className="h-4 w-4" />
                 Editar
               </Button>

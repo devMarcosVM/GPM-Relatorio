@@ -116,8 +116,8 @@ export default function AdminOrcamentoDetalhePage() {
             </Button>
           </Link>
           <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-bold">
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="text-xl font-bold sm:text-2xl">
                 Orçamento #{String(orcamento.numero).padStart(4, "0")}
               </h1>
               <Badge variant="default">{orcamento.status}</Badge>
@@ -131,7 +131,7 @@ export default function AdminOrcamentoDetalhePage() {
           <Select
             value={orcamento.status}
             onChange={(e) => updateStatus(e.target.value)}
-            className="w-36"
+            className="w-full sm:w-36"
           >
             <option value="PENDENTE">Pendente</option>
             <option value="APROVADO">Aprovado</option>

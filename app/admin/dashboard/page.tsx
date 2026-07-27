@@ -10,7 +10,6 @@ import {
   Receipt,
   Users,
   Wrench,
-  Plus,
   DollarSign,
   CheckCircle2,
 } from "lucide-react";
@@ -103,29 +102,30 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-2xl font-bold">Dashboard</h1>
-        <div className="flex flex-wrap items-end gap-2">
-          <div>
+        <h1 className="text-xl font-bold sm:text-2xl">Dashboard</h1>
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-end">
+          <div className="min-w-0">
             <label className="mb-1 block text-xs font-medium text-muted">De</label>
             <Input
               type="date"
               value={dateFrom}
               onChange={(e) => setDateFrom(e.target.value)}
-              className="w-36"
+              className="w-full sm:w-36"
             />
           </div>
-          <div>
+          <div className="min-w-0">
             <label className="mb-1 block text-xs font-medium text-muted">Até</label>
             <Input
               type="date"
               value={dateTo}
               onChange={(e) => setDateTo(e.target.value)}
-              className="w-36"
+              className="w-full sm:w-36"
             />
           </div>
           <Button
             variant="outline"
             size="sm"
+            className="col-span-2 w-full sm:w-auto"
             onClick={() => {
               const d = defaultMonthRange();
               setDateFrom(d.from);
@@ -202,10 +202,10 @@ export default function DashboardPage() {
                     <Link
                       key={r.id}
                       href={`/admin/relatorios/${r.id}`}
-                      className="flex items-center justify-between rounded-lg border border-border p-3 hover:bg-slate-50"
+                      className="flex items-start justify-between gap-3 rounded-lg border border-border p-3 hover:bg-slate-50"
                     >
-                      <div>
-                        <p className="text-sm font-medium">
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium break-words">
                           #{String(r.numero).padStart(4, "0")} —{" "}
                           {r.cliente?.nome || "Cliente pendente"}
                         </p>
@@ -214,6 +214,7 @@ export default function DashboardPage() {
                         </p>
                       </div>
                       <Badge
+                        className="shrink-0"
                         variant={r.status === "FINALIZADO" ? "success" : "warning"}
                       >
                         {r.status === "FINALIZADO" ? "Finalizado" : "Rascunho"}
@@ -233,10 +234,10 @@ export default function DashboardPage() {
                   {stats.recentOrcamentos.map((o) => (
                     <div
                       key={o.id}
-                      className="flex items-center justify-between rounded-lg border border-border p-3"
+                      className="flex items-start justify-between gap-3 rounded-lg border border-border p-3"
                     >
-                      <div>
-                        <p className="text-sm font-medium">
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium break-words">
                           #{String(o.numero).padStart(4, "0")} — {o.cliente.nome}
                         </p>
                         <p className="text-xs text-muted">
@@ -244,6 +245,7 @@ export default function DashboardPage() {
                         </p>
                       </div>
                       <Badge
+                        className="shrink-0"
                         variant={
                           o.status === "APROVADO"
                             ? "success"
