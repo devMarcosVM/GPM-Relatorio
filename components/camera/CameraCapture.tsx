@@ -151,7 +151,8 @@ export function CameraCapture({
               <strong>{isVertical ? "vertical" : "horizontal"}</strong>
             </p>
             <p className="max-w-xs text-center text-xs text-slate-400">
-              A câmera do celular será aberta. Tire a foto e confirme.
+              Use a câmera de trás. Se abrir a frontal, toque no ícone de
+              virar câmera no app do celular.
             </p>
             <Button onClick={openNativeCamera} size="lg">
               <Camera className="h-5 w-5" />
