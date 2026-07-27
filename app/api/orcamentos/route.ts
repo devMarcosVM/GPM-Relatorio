@@ -12,6 +12,28 @@ async function getNextNumero() {
   return (last?.numero ?? 0) + 1;
 }
 
+async function mapItensComUnidade(
+  itens: Array<{ servicoId: string; quantidade: number; precoUnitario: number }>
+) {
+  const servicoIds = itens.map((item) => item.servicoId);
+  const servicos = await prisma.catalogoServico.findMany({
+    where: { id: { in: servicoIds } },
+    select: { id: true, unidade: true },
+  });
+  const unidadePorServico = new Map(
+    servicos.map((servico) => [servico.id, normalizeUnidade(servico.unidade)])
+  );
+
+  return itens.map((item) => ({
+    servicoId: item.servicoId,
+    quantidade: clampQuantidade(
+      Number(item.quantidade) || 1,
+      unidadePorServico.get(item.servicoId) || "UNIDADE"
+    ),
+    precoUnitario: item.precoUnitario,
+  }));
+}
+
 export async function GET(request: NextRequest) {
   const session = await getSession();
   if (!session) {
@@ -42,28 +64,30 @@ export async function POST(request: NextRequest) {
 
   try {
     const data = await request.json();
+    const rascunho = data.rascunho === true;
+    const itens = Array.isArray(data.itens) ? data.itens : [];
 
-    if (!data.clienteId || !Array.isArray(data.itens) || data.itens.length === 0) {
+    if (!data.clienteId) {
       return NextResponse.json(
-        { error: "Cliente e pelo menos um serviço são obrigatórios" },
+        { error: "Selecione o cliente para salvar o orçamento" },
         { status: 400 }
       );
     }
 
-    const servicoIds = data.itens.map(
-      (item: { servicoId: string }) => item.servicoId
-    );
-    const servicos = await prisma.catalogoServico.findMany({
-      where: { id: { in: servicoIds } },
-      select: { id: true, unidade: true },
-    });
-    const unidadePorServico = new Map(
-      servicos.map((servico) => [servico.id, normalizeUnidade(servico.unidade)])
-    );
+    if (!rascunho && itens.length === 0) {
+      return NextResponse.json(
+        { error: "Adicione pelo menos um serviço para finalizar" },
+        { status: 400 }
+      );
+    }
+
+    const itensCreate =
+      itens.length > 0 ? await mapItensComUnidade(itens) : [];
 
     const orcamento = await prisma.orcamento.create({
       data: {
         numero: await getNextNumero(),
+        status: rascunho ? "RASCUNHO" : "PENDENTE",
         clienteId: data.clienteId,
         criadoPorId: session.id,
         desconto: data.desconto || 0,
@@ -74,23 +98,10 @@ export async function POST(request: NextRequest) {
         validadeDias: data.validadeDias || 15,
         formaPagamento: data.formaPagamento || null,
         observacoes: data.observacoes || null,
-        tokenAssinatura: generateAssinaturaToken(),
-        tokenAssinaturaExpira: getAssinaturaExpiry(),
+        tokenAssinatura: rascunho ? null : generateAssinaturaToken(),
+        tokenAssinaturaExpira: rascunho ? null : getAssinaturaExpiry(),
         itens: {
-          create: data.itens.map(
-            (item: {
-              servicoId: string;
-              quantidade: number;
-              precoUnitario: number;
-            }) => ({
-              servicoId: item.servicoId,
-              quantidade: clampQuantidade(
-                Number(item.quantidade) || 1,
-                unidadePorServico.get(item.servicoId) || "UNIDADE"
-              ),
-              precoUnitario: item.precoUnitario,
-            })
-          ),
+          create: itensCreate,
         },
       },
       include: {

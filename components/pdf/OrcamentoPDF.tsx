@@ -33,6 +33,8 @@ interface OrcamentoPDFProps {
     formaPagamento?: string | null;
     observacoes?: string | null;
     assinaturaCliente?: string | null;
+    assinaturaTecnico?: string | null;
+    criadoPor?: { nome: string };
     cliente: {
       nome: string;
       documento?: string | null;
@@ -188,10 +190,11 @@ export function OrcamentoPDF({ empresa, orcamento, absoluteUrl }: OrcamentoPDFPr
           </View>
         )}
 
-        {orcamento.assinaturaCliente ? (
+        {orcamento.assinaturaCliente || orcamento.assinaturaTecnico ? (
           <PdfSignatureFooter
-            leftTitle="CONTRATADA"
-            leftSubtitle={empresa.razaoSocial}
+            leftTitle="PRESTADOR DE SERVIÇO"
+            leftSubtitle={orcamento.criadoPor?.nome || empresa.razaoSocial}
+            leftSignature={orcamento.assinaturaTecnico}
             rightTitle="CLIENTE"
             rightSubtitle={orcamento.cliente.nome}
             rightSignature={orcamento.assinaturaCliente}

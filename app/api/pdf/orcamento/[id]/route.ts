@@ -22,6 +22,7 @@ export async function GET(
       where: { id },
       include: {
         cliente: true,
+        criadoPor: { select: { nome: true } },
         itens: { include: { servico: true } },
       },
     }),

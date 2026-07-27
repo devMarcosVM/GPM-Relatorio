@@ -2,6 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 import { generateAssinaturaToken, getAssinaturaExpiry } from "@/lib/assinaturaLink";
+import {
+  loadRelatorioAccess,
+  relatorioAcessoNegado,
+  relatorioFinalizado,
+} from "@/lib/relatorioAccess";
 
 export async function POST(
   request: NextRequest,
@@ -13,6 +18,21 @@ export async function POST(
   }
 
   const { id } = await params;
+
+  const access = await loadRelatorioAccess(id);
+  if (!access) {
+    return NextResponse.json({ error: "Não encontrado" }, { status: 404 });
+  }
+  if (relatorioAcessoNegado(session, access)) {
+    return NextResponse.json({ error: "Acesso negado" }, { status: 403 });
+  }
+  if (relatorioFinalizado(access)) {
+    return NextResponse.json(
+      { error: "Relatório já finalizado" },
+      { status: 400 }
+    );
+  }
+
   const data = await request.json();
 
   if (!data.clienteId) {

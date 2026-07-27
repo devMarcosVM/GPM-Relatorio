@@ -26,6 +26,7 @@ import type { OrientacaoFoto, TipoFoto } from "@/lib/types";
 import { toAssetPath } from "@/lib/assetUrl";
 import { buildAssinaturaWhatsAppMessage } from "@/lib/assinaturaLink";
 import { telefoneParaWhatsApp } from "@/lib/documentosBr";
+import { RelatorioItensLeitura } from "@/components/relatorio/RelatorioItensLeitura";
 
 interface Cliente {
   id: string;
@@ -182,6 +183,17 @@ export default function RelatorioDetailPage() {
     load();
   };
 
+  const excluirRelatorio = async () => {
+    if (!confirm("Excluir este relatório? Esta ação não pode ser desfeita.")) return;
+    const res = await fetch(`/api/relatorios/${id}`, { method: "DELETE" });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      alert(data.error || "Erro ao excluir");
+      return;
+    }
+    router.push("/campo/relatorios");
+  };
+
   const shareWhatsApp = () => {
     if (!relatorio?.cliente) return;
     const phone = relatorio.cliente.telefone
@@ -247,9 +259,19 @@ export default function RelatorioDetailPage() {
             <p className="text-xs text-muted">{clienteNome}</p>
           </div>
         </div>
+        <div className="flex items-center gap-2">
         <Badge variant={relatorio.status === "FINALIZADO" ? "success" : "warning"}>
           {relatorio.status === "FINALIZADO" ? "Finalizado" : "Rascunho"}
         </Badge>
+        <button
+          type="button"
+          onClick={excluirRelatorio}
+          className="text-red-600"
+          aria-label="Excluir relatório"
+        >
+          <Trash2 className="h-5 w-5" />
+        </button>
+        </div>
       </header>
 
       <main className="mx-auto max-w-lg space-y-4 p-4">
@@ -430,6 +452,12 @@ export default function RelatorioDetailPage() {
         )}
 
         {(step === "concluido" || relatorio.status === "FINALIZADO") && (
+          <>
+            <RelatorioItensLeitura
+              itens={relatorio.itens}
+              enderecoServico={relatorio.enderecoServico}
+              observacoes={relatorio.observacoes}
+            />
           <Card className="space-y-4 text-center">
             <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
               <Check className="h-8 w-8 text-green-600" />
@@ -464,6 +492,7 @@ export default function RelatorioDetailPage() {
               </Button>
             </div>
           </Card>
+          </>
         )}
       </main>
     </div>

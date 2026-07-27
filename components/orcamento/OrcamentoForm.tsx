@@ -30,7 +30,6 @@ import {
 } from "@/lib/unidade";
 import { calcOrcamentoSubtotal, calcOrcamentoTotal, calcDescontoPacote, validateDescontoInput } from "@/lib/orcamento";
 import {
-  buildAssinaturaUrl,
   buildAssinaturaWhatsAppMessage,
 } from "@/lib/assinaturaLink";
 import { copiarLinkAssinatura } from "@/lib/shareAssinatura";
@@ -52,12 +51,15 @@ interface ItemOrcamento {
   quantidadeInput: string;
   quantidadeErro: string;
   precoUnitario: number;
+  precoInput: string;
   precoCatalogo: number;
 }
 
 interface OrcamentoFormProps {
   backHref: string;
   backLabel?: string;
+  /** ID de rascunho existente para continuar editando */
+  orcamentoId?: string;
 }
 
 const FORMAS_PAGAMENTO = [
@@ -90,12 +92,31 @@ function formatFormaPagamento(tipo: FormaPagamentoTipo | "", parcelas: number): 
   }
 }
 
+function parseFormaPagamento(value?: string | null): {
+  tipo: FormaPagamentoTipo | "";
+  parcelas: number;
+} {
+  if (!value) return { tipo: "", parcelas: 1 };
+  const credito = value.match(/crédito\s*[—-]\s*(\d+)x/i);
+  if (credito) {
+    return { tipo: "CREDITO", parcelas: parseInt(credito[1], 10) || 1 };
+  }
+  const found = FORMAS_PAGAMENTO.find(
+    (f) => value === f.label || value.startsWith(f.label)
+  );
+  return { tipo: found?.value ?? "", parcelas: 1 };
+}
+
 function parseMoney(value: string) {
   const parsed = parseFloat(value.replace(",", "."));
   return Number.isFinite(parsed) ? Math.max(0, parsed) : 0;
 }
 
-export function OrcamentoForm({ backHref, backLabel = "Voltar" }: OrcamentoFormProps) {
+export function OrcamentoForm({
+  backHref,
+  backLabel = "Voltar",
+  orcamentoId: orcamentoIdProp,
+}: OrcamentoFormProps) {
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [servicos, setServicos] = useState<Servico[]>([]);
   const [clienteId, setClienteId] = useState("");
@@ -110,11 +131,14 @@ export function OrcamentoForm({ backHref, backLabel = "Voltar" }: OrcamentoFormP
   const [parcelasCredito, setParcelasCredito] = useState(1);
   const [observacoes, setObservacoes] = useState("");
   const [loading, setLoading] = useState(false);
+  const [loadingDraft, setLoadingDraft] = useState(!!orcamentoIdProp);
+  const [draftId, setDraftId] = useState<string | null>(orcamentoIdProp ?? null);
   const [orcamentoId, setOrcamentoId] = useState<string | null>(null);
   const [orcamentoNumero, setOrcamentoNumero] = useState(0);
   const [tokenAssinatura, setTokenAssinatura] = useState<string | null>(null);
   const [totalSalvo, setTotalSalvo] = useState(0);
   const [error, setError] = useState("");
+  const [savedMsg, setSavedMsg] = useState("");
   const [copyState, setCopyState] = useState<"idle" | "copied" | "error">("idle");
 
   useEffect(() => {
@@ -128,10 +152,68 @@ export function OrcamentoForm({ backHref, backLabel = "Voltar" }: OrcamentoFormP
   }, []);
 
   useEffect(() => {
+    if (!orcamentoIdProp) return;
+
+    setLoadingDraft(true);
+    fetch(`/api/orcamentos/${orcamentoIdProp}`)
+      .then(async (r) => {
+        const data = await r.json();
+        if (!r.ok) throw new Error(data.error || "Erro ao carregar");
+        if (data.status !== "RASCUNHO") {
+          throw new Error("Este orçamento já foi finalizado");
+        }
+        setDraftId(data.id);
+        setOrcamentoNumero(data.numero);
+        setClienteId(data.clienteId || data.cliente?.id || "");
+        setDesconto(data.desconto || 0);
+        setDescontoInput(String(data.desconto || 0));
+        setValorFinalPacote(
+          data.valorFinal != null ? String(data.valorFinal) : ""
+        );
+        setValidadeDias(data.validadeDias || 15);
+        setObservacoes(data.observacoes || "");
+        const forma = parseFormaPagamento(data.formaPagamento);
+        setFormaPagamentoTipo(forma.tipo);
+        setParcelasCredito(forma.parcelas);
+        setItens(
+          (data.itens || []).map(
+            (item: {
+              servicoId: string;
+              quantidade: number;
+              precoUnitario: number;
+              servico: { nome: string; preco: number; unidade?: string | null };
+            }) => {
+              const unidade = normalizeUnidade(item.servico.unidade);
+              return {
+                servicoId: item.servicoId,
+                servicoNome: item.servico.nome,
+                unidade,
+                quantidade: item.quantidade,
+                quantidadeInput: formatQuantidadeInput(item.quantidade, unidade),
+                quantidadeErro: "",
+                precoUnitario: item.precoUnitario,
+                precoInput: String(item.precoUnitario),
+                precoCatalogo: item.servico.preco,
+              };
+            }
+          )
+        );
+      })
+      .catch((err) => setError(err.message || "Erro ao carregar rascunho"))
+      .finally(() => setLoadingDraft(false));
+  }, [orcamentoIdProp]);
+
+  useEffect(() => {
     if (copyState === "idle") return;
     const timeout = setTimeout(() => setCopyState("idle"), 2000);
     return () => clearTimeout(timeout);
   }, [copyState]);
+
+  useEffect(() => {
+    if (!savedMsg) return;
+    const timeout = setTimeout(() => setSavedMsg(""), 2500);
+    return () => clearTimeout(timeout);
+  }, [savedMsg]);
 
   const addItem = () => {
     const servico = servicos.find((s) => s.id === selectedServico);
@@ -148,6 +230,7 @@ export function OrcamentoForm({ backHref, backLabel = "Voltar" }: OrcamentoFormP
         quantidadeInput: formatQuantidadeInput(quantidade, unidade),
         quantidadeErro: "",
         precoUnitario: servico.preco,
+        precoInput: String(servico.preco),
         precoCatalogo: servico.preco,
       },
     ]);
@@ -221,9 +304,20 @@ export function OrcamentoForm({ backHref, backLabel = "Voltar" }: OrcamentoFormP
     return ok;
   };
 
-  const updatePrecoUnitario = (idx: number, preco: number) => {
+  const updatePrecoInput = (idx: number, value: string) => {
     const updated = [...itens];
-    updated[idx].precoUnitario = Math.max(0, preco);
+    updated[idx] = { ...updated[idx], precoInput: value };
+    setItens(updated);
+  };
+
+  const commitPreco = (idx: number) => {
+    const updated = [...itens];
+    const preco = parseMoney(updated[idx].precoInput);
+    updated[idx] = {
+      ...updated[idx],
+      precoUnitario: preco,
+      precoInput: String(preco),
+    };
     setItens(updated);
   };
 
@@ -254,43 +348,93 @@ export function OrcamentoForm({ backHref, backLabel = "Voltar" }: OrcamentoFormP
     return true;
   };
 
-  const criarOrcamento = async () => {
-    if (!clienteId || itens.length === 0) return;
-    if (!validarQuantidadesItens()) {
-      setError("Corrija as quantidades dos serviços antes de gerar o orçamento.");
+  const buildPayload = (opts: { rascunho?: boolean; finalizar?: boolean }) => ({
+    clienteId,
+    desconto: usaPacote ? 0 : desconto,
+    valorFinal: usaPacote ? valorFinal : null,
+    validadeDias,
+    formaPagamento: formatFormaPagamento(formaPagamentoTipo, parcelasCredito),
+    observacoes,
+    itens: itens.map((i) => ({
+      servicoId: i.servicoId,
+      quantidade: i.quantidade,
+      precoUnitario: i.precoUnitario,
+    })),
+    ...opts,
+  });
+
+  const salvarRascunho = async () => {
+    if (!clienteId) {
+      setError("Selecione o cliente para salvar o rascunho.");
+      return;
+    }
+    if (itens.length > 0 && !validarQuantidadesItens()) {
+      setError("Corrija as quantidades dos serviços antes de salvar.");
       return;
     }
     if (!validarDesconto()) {
-      setError("Corrija o desconto antes de gerar o orçamento.");
+      setError("Corrija o desconto antes de salvar.");
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+    setSavedMsg("");
+
+    const res = await fetch(
+      draftId ? `/api/orcamentos/${draftId}` : "/api/orcamentos",
+      {
+        method: draftId ? "PUT" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(buildPayload({ rascunho: true })),
+      }
+    );
+
+    const orcamento = await res.json().catch(() => null);
+    setLoading(false);
+
+    if (!res.ok || !orcamento?.id) {
+      setError(orcamento?.error || "Erro ao salvar rascunho");
+      return;
+    }
+
+    setDraftId(orcamento.id);
+    setOrcamentoNumero(orcamento.numero);
+    setSavedMsg("Rascunho salvo. Você pode continuar depois.");
+  };
+
+  const finalizarOrcamento = async () => {
+    if (!clienteId || itens.length === 0) return;
+    if (!validarQuantidadesItens()) {
+      setError("Corrija as quantidades dos serviços antes de finalizar.");
+      return;
+    }
+    if (!validarDesconto()) {
+      setError("Corrija o desconto antes de finalizar.");
       return;
     }
 
     setLoading(true);
     setError("");
 
-    const res = await fetch("/api/orcamentos", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        clienteId,
-        desconto: usaPacote ? 0 : desconto,
-        valorFinal: usaPacote ? valorFinal : null,
-        validadeDias,
-        formaPagamento: formatFormaPagamento(formaPagamentoTipo, parcelasCredito),
-        observacoes,
-        itens: itens.map((i) => ({
-          servicoId: i.servicoId,
-          quantidade: i.quantidade,
-          precoUnitario: i.precoUnitario,
-        })),
-      }),
-    });
+    const res = await fetch(
+      draftId ? `/api/orcamentos/${draftId}` : "/api/orcamentos",
+      {
+        method: draftId ? "PUT" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(
+          draftId
+            ? buildPayload({ finalizar: true })
+            : buildPayload({})
+        ),
+      }
+    );
 
     const orcamento = await res.json().catch(() => null);
     setLoading(false);
 
     if (!res.ok || !orcamento?.id) {
-      setError(orcamento?.error || "Erro ao gerar orçamento");
+      setError(orcamento?.error || "Erro ao finalizar orçamento");
       return;
     }
 
@@ -300,6 +444,7 @@ export function OrcamentoForm({ backHref, backLabel = "Voltar" }: OrcamentoFormP
     setOrcamentoId(orcamento.id);
     setOrcamentoNumero(orcamento.numero);
     setTokenAssinatura(orcamento.tokenAssinatura || null);
+    setDraftId(null);
   };
 
   const shareWhatsApp = () => {
@@ -328,6 +473,14 @@ export function OrcamentoForm({ backHref, backLabel = "Voltar" }: OrcamentoFormP
       setCopyState("error");
     }
   };
+
+  if (loadingDraft) {
+    return (
+      <div className="py-12 text-center text-sm text-muted">
+        Carregando rascunho...
+      </div>
+    );
+  }
 
   if (orcamentoId) {
     return (
@@ -507,13 +660,12 @@ export function OrcamentoForm({ backHref, backLabel = "Voltar" }: OrcamentoFormP
                     {item.unidade === "METRO" ? "Preço por metro (R$)" : "Preço unit. (R$)"}
                   </label>
                   <Input
-                    type="number"
-                    min={0}
-                    step="0.01"
-                    value={item.precoUnitario}
-                    onChange={(e) =>
-                      updatePrecoUnitario(idx, parseMoney(e.target.value))
-                    }
+                    type="text"
+                    inputMode="decimal"
+                    value={item.precoInput}
+                    onChange={(e) => updatePrecoInput(idx, e.target.value)}
+                    onBlur={() => commitPreco(idx)}
+                    placeholder="0"
                   />
                 </div>
                 <div className="col-span-2 sm:col-span-1">
@@ -649,22 +801,41 @@ export function OrcamentoForm({ backHref, backLabel = "Voltar" }: OrcamentoFormP
         </div>
       </Card>
 
-      <Button
-        className="w-full"
-        size="lg"
-        onClick={criarOrcamento}
-        disabled={
-          !clienteId ||
-          itens.length === 0 ||
-          loading ||
-          itens.some((item) => item.quantidadeErro) ||
-          (!usaPacote && !!descontoErro)
-        }
-      >
-        {loading ? "Gerando..." : "Gerar Orçamento"}
-      </Button>
+      <div className="space-y-2">
+        <Button
+          className="w-full"
+          size="lg"
+          variant="outline"
+          onClick={salvarRascunho}
+          disabled={!clienteId || loading}
+        >
+          {loading ? "Salvando..." : draftId ? "Atualizar rascunho" : "Salvar rascunho"}
+        </Button>
+        <Button
+          className="w-full"
+          size="lg"
+          onClick={finalizarOrcamento}
+          disabled={
+            !clienteId ||
+            itens.length === 0 ||
+            loading ||
+            itens.some((item) => item.quantidadeErro) ||
+            (!usaPacote && !!descontoErro)
+          }
+        >
+          {loading ? "Finalizando..." : "Finalizar orçamento"}
+        </Button>
+      </div>
 
+      {savedMsg && (
+        <p className="text-center text-sm text-green-700">{savedMsg}</p>
+      )}
       {error && <p className="text-sm text-red-600 text-center">{error}</p>}
+      {draftId && !savedMsg && (
+        <p className="text-center text-xs text-muted">
+          Rascunho #{String(orcamentoNumero).padStart(4, "0")} — continue quando quiser
+        </p>
+      )}
     </div>
   );
 }

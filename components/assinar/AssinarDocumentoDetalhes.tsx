@@ -141,6 +141,11 @@ export function AssinarDocumentoDetalhes({ info }: { info: DocumentoAssinaturaPu
                 </p>
               </div>
             )}
+            {info.temAssinaturaTecnico && (
+              <p className="text-xs font-medium text-green-700">
+                Técnico já assinou este documento
+              </p>
+            )}
           </section>
 
           <section className="space-y-3">

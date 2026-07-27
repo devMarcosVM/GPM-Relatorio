@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth";
+import {
+  loadRelatorioAccess,
+  relatorioAcessoNegado,
+  relatorioFinalizado,
+} from "@/lib/relatorioAccess";
 
 export async function GET(
   _request: NextRequest,
@@ -29,6 +34,10 @@ export async function GET(
     return NextResponse.json({ error: "Não encontrado" }, { status: 404 });
   }
 
+  if (session.role === "TECNICO" && relatorio.tecnico.id !== session.id) {
+    return NextResponse.json({ error: "Acesso negado" }, { status: 403 });
+  }
+
   return NextResponse.json(relatorio);
 }
 
@@ -42,6 +51,20 @@ export async function PUT(
   }
 
   const { id } = await params;
+  const access = await loadRelatorioAccess(id);
+  if (!access) {
+    return NextResponse.json({ error: "Não encontrado" }, { status: 404 });
+  }
+  if (relatorioAcessoNegado(session, access)) {
+    return NextResponse.json({ error: "Acesso negado" }, { status: 403 });
+  }
+  if (relatorioFinalizado(access)) {
+    return NextResponse.json(
+      { error: "Relatório finalizado não pode ser editado" },
+      { status: 400 }
+    );
+  }
+
   const data = await request.json();
 
   const updateData: Record<string, unknown> = {};
@@ -73,6 +96,15 @@ export async function DELETE(
   }
 
   const { id } = await params;
+
+  const access = await loadRelatorioAccess(id);
+  if (!access) {
+    return NextResponse.json({ error: "Não encontrado" }, { status: 404 });
+  }
+  if (relatorioAcessoNegado(session, access)) {
+    return NextResponse.json({ error: "Acesso negado" }, { status: 403 });
+  }
+
   await prisma.relatorio.delete({ where: { id } });
   return NextResponse.json({ success: true });
 }

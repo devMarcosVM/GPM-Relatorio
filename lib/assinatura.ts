@@ -155,7 +155,7 @@ export async function buscarDocumentoPublicoPorToken(
       endereco: orcamento.cliente.endereco,
     },
     responsavelNome: orcamento.criadoPor.nome,
-    temAssinaturaTecnico: false,
+    temAssinaturaTecnico: !!orcamento.assinaturaTecnico,
     orcamento: {
       createdAt: orcamento.createdAt.toISOString(),
       validadeDias: orcamento.validadeDias,

@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
 import { ListFilters } from "@/components/admin/ListFilters";
 import Link from "next/link";
-import { Download, Trash2, Plus, MessageCircle, Copy, Check } from "lucide-react";
+import { Download, Trash2, Plus, MessageCircle, Copy, Check, Eye } from "lucide-react";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { calcOrcamentoTotal } from "@/lib/orcamento";
 import { isInDateRange, matchesSearch } from "@/lib/adminFilters";
@@ -200,10 +200,12 @@ export default function OrcamentosAdminPage() {
                           ? "success"
                           : o.status === "RECUSADO"
                             ? "danger"
-                            : "warning"
+                            : o.status === "RASCUNHO"
+                              ? "default"
+                              : "warning"
                       }
                     >
-                      {o.status}
+                      {o.status === "RASCUNHO" ? "Rascunho" : o.status}
                     </Badge>
                   </div>
                   <p className="text-sm">{o.cliente.nome}</p>
@@ -220,11 +222,12 @@ export default function OrcamentosAdminPage() {
                     onChange={(e) => updateStatus(o.id, e.target.value)}
                     className="w-36"
                   >
+                    <option value="RASCUNHO">Rascunho</option>
                     <option value="PENDENTE">Pendente</option>
                     <option value="APROVADO">Aprovado</option>
                     <option value="RECUSADO">Recusado</option>
                   </Select>
-                  {!o.assinaturaCliente && (
+                  {!o.assinaturaCliente && o.status !== "RASCUNHO" && (
                     <>
                       <Button
                         variant="outline"
@@ -254,6 +257,20 @@ export default function OrcamentosAdminPage() {
                         )}
                       </Button>
                     </>
+                  )}
+                  {o.status === "RASCUNHO" && (
+                    <Link href={`/admin/orcamentos/${o.id}/editar`}>
+                      <Button variant="outline" size="sm">
+                        Continuar
+                      </Button>
+                    </Link>
+                  )}
+                  {o.status !== "RASCUNHO" && (
+                    <Link href={`/admin/orcamentos/${o.id}`}>
+                      <Button variant="outline" size="sm" title="Ver detalhes">
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                    </Link>
                   )}
                   <a href={`/api/pdf/orcamento/${o.id}`} target="_blank">
                     <Button variant="outline" size="sm">

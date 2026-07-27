@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
-import { FileText, Receipt, LogOut, ChevronRight, Plus } from "lucide-react";
+import { FileText, Receipt, LogOut, ChevronRight, Calculator, UserPlus } from "lucide-react";
 
 export default function CampoHomePage() {
   const router = useRouter();
@@ -46,27 +46,34 @@ export default function CampoHomePage() {
       <main className="mx-auto max-w-lg space-y-6 p-4">
         <section>
           <h2 className="mb-3 text-sm font-medium text-muted">Ações rápidas</h2>
-          <div className="grid grid-cols-2 gap-3">
-            <Link href="/campo/relatorio/novo">
-              <Card className="flex flex-col items-center gap-3 py-6 hover:border-primary transition-colors cursor-pointer">
-                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-sky-100 text-primary">
-                  <Plus className="h-7 w-7" />
+          <div className="space-y-3">
+            <Link href="/campo/calculadora">
+              <Card className="flex items-center gap-4 p-5 hover:border-primary transition-colors cursor-pointer">
+                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-amber-100 text-amber-700">
+                  <Calculator className="h-7 w-7" />
                 </div>
-                <div className="text-center">
-                  <p className="text-sm font-semibold">Novo Relatório</p>
-                  <p className="mt-0.5 text-xs text-muted">Fotos e assinatura</p>
+                <div className="flex-1">
+                  <p className="text-lg font-semibold">Calculadora</p>
+                  <p className="text-sm text-muted">
+                    Estimar valor na hora — sem cadastro
+                  </p>
                 </div>
+                <ChevronRight className="h-5 w-5 text-muted" />
               </Card>
             </Link>
-            <Link href="/campo/orcamento/novo">
-              <Card className="flex flex-col items-center gap-3 py-6 hover:border-primary transition-colors cursor-pointer">
-                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-green-100 text-green-700">
-                  <Plus className="h-7 w-7" />
+
+            <Link href="/campo/cliente/novo">
+              <Card className="flex items-center gap-4 p-5 hover:border-primary transition-colors cursor-pointer">
+                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-violet-100 text-violet-700">
+                  <UserPlus className="h-7 w-7" />
                 </div>
-                <div className="text-center">
-                  <p className="text-sm font-semibold">Novo Orçamento</p>
-                  <p className="mt-0.5 text-xs text-muted">Enviar ao cliente</p>
+                <div className="flex-1">
+                  <p className="text-lg font-semibold">Novo cliente</p>
+                  <p className="text-sm text-muted">
+                    Cadastrar para usar em relatório ou orçamento
+                  </p>
                 </div>
+                <ChevronRight className="h-5 w-5 text-muted" />
               </Card>
             </Link>
           </div>

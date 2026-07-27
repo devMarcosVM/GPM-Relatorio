@@ -1,17 +1,19 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { SignaturePad, type SignaturePadRef } from "@/components/SignaturePad";
 import {
   ArrowLeft,
   Download,
   MessageCircle,
   Copy,
   Check,
+  Trash2,
 } from "lucide-react";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { calcOrcamentoTotal } from "@/lib/orcamento";
@@ -32,6 +34,7 @@ interface Orcamento {
   desconto: number;
   valorFinal?: number | null;
   assinaturaCliente?: string | null;
+  assinaturaTecnico?: string | null;
   tokenAssinatura?: string | null;
   createdAt: string;
   cliente: { nome: string; telefone?: string | null };
@@ -44,9 +47,13 @@ interface Orcamento {
 
 export default function CampoOrcamentoPage() {
   const { id } = useParams<{ id: string }>();
+  const router = useRouter();
+  const assinaturaRef = useRef<SignaturePadRef>(null);
   const [orcamento, setOrcamento] = useState<Orcamento | null>(null);
   const [loading, setLoading] = useState(true);
   const [sharing, setSharing] = useState(false);
+  const [salvandoAssinatura, setSalvandoAssinatura] = useState(false);
+  const [assinaturaErro, setAssinaturaErro] = useState("");
   const [copyState, setCopyState] = useState<"idle" | "copied" | "error">("idle");
 
   const load = () => {
@@ -112,6 +119,42 @@ export default function CampoOrcamentoPage() {
     }
   };
 
+  const salvarAssinaturaTecnico = async () => {
+    setAssinaturaErro("");
+    const sig = assinaturaRef.current?.exportSignature();
+    if (!sig) {
+      setAssinaturaErro("Desenhe sua assinatura antes de salvar.");
+      return;
+    }
+
+    setSalvandoAssinatura(true);
+    const res = await fetch(`/api/orcamentos/${id}/assinatura-tecnico`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ assinaturaTecnico: sig }),
+    });
+    const data = await res.json().catch(() => null);
+    setSalvandoAssinatura(false);
+
+    if (!res.ok) {
+      setAssinaturaErro(data?.error || "Erro ao salvar assinatura");
+      return;
+    }
+
+    setOrcamento(data);
+  };
+
+  const excluirOrcamento = async () => {
+    if (!confirm("Excluir este orçamento? Esta ação não pode ser desfeita.")) return;
+    const res = await fetch(`/api/orcamentos/${id}`, { method: "DELETE" });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      alert(data.error || "Erro ao excluir");
+      return;
+    }
+    router.push("/campo/orcamentos");
+  };
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center text-muted">
@@ -133,10 +176,29 @@ export default function CampoOrcamentoPage() {
     );
   }
 
+  if (orcamento.status === "RASCUNHO") {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4 p-4">
+        <p className="text-sm text-muted">Este orçamento ainda é um rascunho.</p>
+        <Link href={`/campo/orcamento/${id}/editar`}>
+          <Button>Continuar editando</Button>
+        </Link>
+        <Button variant="danger" onClick={excluirOrcamento}>
+          <Trash2 className="h-4 w-4" />
+          Excluir rascunho
+        </Button>
+        <Link href="/campo/orcamentos">
+          <Button variant="ghost">Voltar</Button>
+        </Link>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-slate-50">
       <header className="bg-primary px-4 py-4 text-white">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
           <Link href="/campo/orcamentos">
             <ArrowLeft className="h-5 w-5" />
           </Link>
@@ -146,6 +208,15 @@ export default function CampoOrcamentoPage() {
               #{String(orcamento.numero).padStart(4, "0")}
             </p>
           </div>
+          </div>
+          <button
+            type="button"
+            onClick={excluirOrcamento}
+            className="rounded p-1 text-white/90 hover:bg-white/10"
+            aria-label="Excluir orçamento"
+          >
+            <Trash2 className="h-5 w-5" />
+          </button>
         </div>
       </header>
 
@@ -177,6 +248,47 @@ export default function CampoOrcamentoPage() {
               </li>
             )})}
           </ul>
+        </Card>
+
+        <Card className="space-y-3">
+          <h2 className="font-medium">Assinatura do técnico</h2>
+          {orcamento.assinaturaTecnico ? (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-sm text-green-700">
+                <Check className="h-4 w-4" />
+                Assinatura do técnico registrada
+              </div>
+              <img
+                src={orcamento.assinaturaTecnico}
+                alt="Assinatura do técnico"
+                className="h-20 w-full rounded-lg border border-border bg-white object-contain"
+              />
+            </div>
+          ) : (
+            <>
+              <p className="text-xs text-muted">
+                Pode assinar agora ou depois — não é obrigatório para enviar ao
+                cliente.
+              </p>
+              <SignaturePad
+                ref={assinaturaRef}
+                label="Sua assinatura"
+                onSave={() => {}}
+              />
+              {assinaturaErro && (
+                <p className="text-sm text-red-600" role="alert">
+                  {assinaturaErro}
+                </p>
+              )}
+              <Button
+                className="w-full"
+                onClick={salvarAssinaturaTecnico}
+                disabled={salvandoAssinatura}
+              >
+                {salvandoAssinatura ? "Salvando..." : "Salvar assinatura"}
+              </Button>
+            </>
+          )}
         </Card>
 
         <Card className="space-y-2">
@@ -221,6 +333,11 @@ export default function CampoOrcamentoPage() {
               Cliente já assinou este orçamento
             </div>
           )}
+
+          <Button variant="danger" className="w-full" onClick={excluirOrcamento}>
+            <Trash2 className="h-4 w-4" />
+            Excluir orçamento
+          </Button>
         </Card>
       </main>
     </div>

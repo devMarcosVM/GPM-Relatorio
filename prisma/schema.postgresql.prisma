@@ -110,9 +110,14 @@ model Orcamento {
   numero         Int             @unique
   status         String          @default("PENDENTE")
   desconto       Float           @default(0)
+  valorFinal     Float?
   validadeDias   Int             @default(15)
   formaPagamento String?
   observacoes    String?
+  assinaturaTecnico String?
+  assinaturaCliente String?
+  tokenAssinatura   String?   @unique
+  tokenAssinaturaExpira DateTime?
   clienteId      String
   cliente        Cliente         @relation(fields: [clienteId], references: [id])
   criadoPorId    String

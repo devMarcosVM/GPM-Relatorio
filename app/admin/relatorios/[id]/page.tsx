@@ -11,6 +11,7 @@ import { ClienteSearchSelect } from "@/components/cliente/ClienteSearchSelect";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { PhotoUpload } from "@/components/relatorio/PhotoUpload";
+import { RelatorioItensLeitura } from "@/components/relatorio/RelatorioItensLeitura";
 import { SignaturePad, type SignaturePadRef } from "@/components/SignaturePad";
 import {
   ArrowLeft,
@@ -258,6 +259,7 @@ export default function AdminRelatorioDetailPage() {
   }
 
   const totalFotos = relatorio.itens.reduce((sum, i) => sum + i.fotos.length, 0);
+  const editavel = relatorio.status !== "FINALIZADO";
 
   return (
     <div className="space-y-6 max-w-4xl">
@@ -280,8 +282,18 @@ export default function AdminRelatorioDetailPage() {
               </Badge>
             </div>
             <p className="text-sm text-muted mt-1 flex items-center gap-1">
-              <Pencil className="h-3.5 w-3.5" />
-              Modo edição — {relatorio.itens.length} serviço(s) • {totalFotos} foto(s)
+              {editavel ? (
+                <>
+                  <Pencil className="h-3.5 w-3.5" />
+                  Modo edição — {relatorio.itens.length} serviço(s) • {totalFotos}{" "}
+                  foto(s)
+                </>
+              ) : (
+                <>
+                  Visualização — {relatorio.itens.length} serviço(s) • {totalFotos}{" "}
+                  foto(s)
+                </>
+              )}
             </p>
           </div>
         </div>
@@ -328,43 +340,66 @@ export default function AdminRelatorioDetailPage() {
           Informações do relatório
         </h2>
 
-        <div>
-          <label className="mb-1 block text-sm font-medium">Cliente contratante</label>
-          <ClienteSearchSelect
-            clientes={clientes}
-            value={clienteId}
-            onChange={setClienteId}
-            allowEmpty
-            emptyLabel="Sem cliente / pendente"
-            placeholder="Buscar por nome, telefone ou documento..."
-          />
-        </div>
+        {editavel ? (
+          <>
+            <div>
+              <label className="mb-1 block text-sm font-medium">Cliente contratante</label>
+              <ClienteSearchSelect
+                clientes={clientes}
+                value={clienteId}
+                onChange={setClienteId}
+                allowEmpty
+                emptyLabel="Sem cliente / pendente"
+                placeholder="Buscar por nome, telefone ou documento..."
+              />
+            </div>
 
-        <div>
-          <label className="mb-1 block text-sm font-medium">Endereço do serviço</label>
-          <Input
-            value={enderecoServico}
-            onChange={(e) => setEnderecoServico(e.target.value)}
-            placeholder="Local do serviço"
-          />
-        </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium">Endereço do serviço</label>
+              <Input
+                value={enderecoServico}
+                onChange={(e) => setEnderecoServico(e.target.value)}
+                placeholder="Local do serviço"
+              />
+            </div>
 
-        <div>
-          <label className="mb-1 block text-sm font-medium">Observações gerais</label>
-          <Textarea
-            value={observacoes}
-            onChange={(e) => setObservacoes(e.target.value)}
-            rows={3}
-          />
-        </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium">Observações gerais</label>
+              <Textarea
+                value={observacoes}
+                onChange={(e) => setObservacoes(e.target.value)}
+                rows={3}
+              />
+            </div>
 
-        <div className="flex items-center gap-3">
-          <Button onClick={saveInfo} disabled={saving} size="sm">
-            <Save className="h-4 w-4" />
-            {saving ? "Salvando..." : "Salvar informações"}
-          </Button>
-          {saved && <span className="text-sm text-green-600">Salvo!</span>}
-        </div>
+            <div className="flex items-center gap-3">
+              <Button onClick={saveInfo} disabled={saving} size="sm">
+                <Save className="h-4 w-4" />
+                {saving ? "Salvando..." : "Salvar informações"}
+              </Button>
+              {saved && <span className="text-sm text-green-600">Salvo!</span>}
+            </div>
+          </>
+        ) : (
+          <div className="space-y-2 text-sm">
+            <p>
+              <span className="font-medium">Cliente: </span>
+              {relatorio.cliente?.nome || "—"}
+            </p>
+            {relatorio.enderecoServico && (
+              <p>
+                <span className="font-medium">Endereço: </span>
+                {relatorio.enderecoServico}
+              </p>
+            )}
+            {relatorio.observacoes && (
+              <p>
+                <span className="font-medium">Observações: </span>
+                {relatorio.observacoes}
+              </p>
+            )}
+          </div>
+        )}
 
         <div className="text-xs text-muted flex items-center gap-2 pt-2 border-t">
           <Calendar className="h-3.5 w-3.5" />
@@ -373,6 +408,7 @@ export default function AdminRelatorioDetailPage() {
         </div>
       </Card>
 
+      {editavel && (
       <Card className="space-y-3">
         <h2 className="font-semibold">Adicionar serviço</h2>
         <div className="flex gap-2">
@@ -393,11 +429,18 @@ export default function AdminRelatorioDetailPage() {
           </Button>
         </div>
       </Card>
+      )}
 
       <div className="space-y-4">
-        <h2 className="font-semibold">Serviços e fotos (opcionais)</h2>
+        <h2 className="font-semibold">Serviços e fotos</h2>
 
-        {relatorio.itens.length === 0 ? (
+        {!editavel ? (
+          <RelatorioItensLeitura
+            itens={relatorio.itens}
+            enderecoServico={null}
+            observacoes={null}
+          />
+        ) : relatorio.itens.length === 0 ? (
           <Card className="text-center py-8 text-muted text-sm">
             Nenhum serviço adicionado
           </Card>

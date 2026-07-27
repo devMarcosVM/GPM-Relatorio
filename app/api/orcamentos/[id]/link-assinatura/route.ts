@@ -19,6 +19,13 @@ export async function POST(
     return NextResponse.json({ error: "Não encontrado" }, { status: 404 });
   }
 
+  if (orcamento.status === "RASCUNHO") {
+    return NextResponse.json(
+      { error: "Finalize o orçamento antes de enviar para assinatura" },
+      { status: 400 }
+    );
+  }
+
   if (orcamento.assinaturaCliente) {
     return NextResponse.json(
       { error: "Cliente já assinou este orçamento" },

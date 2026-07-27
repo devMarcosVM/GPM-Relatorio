@@ -67,7 +67,14 @@ export default function CampoOrcamentosPage() {
           </Card>
         ) : (
           orcamentos.map((o) => (
-            <Link key={o.id} href={`/campo/orcamento/${o.id}`}>
+            <Link
+              key={o.id}
+              href={
+                o.status === "RASCUNHO"
+                  ? `/campo/orcamento/${o.id}/editar`
+                  : `/campo/orcamento/${o.id}`
+              }
+            >
               <Card className="flex items-center justify-between hover:border-primary transition-colors cursor-pointer">
                 <div className="flex items-center gap-3">
                   <Receipt className="h-5 w-5 text-green-700" />
@@ -76,10 +83,12 @@ export default function CampoOrcamentosPage() {
                       #{String(o.numero).padStart(4, "0")} — {o.cliente.nome}
                     </p>
                     <p className="text-xs text-muted">
-                      {formatDate(o.createdAt)} —{" "}
-                      {formatCurrency(
-                        calcOrcamentoTotal(o.itens, o.desconto, o.valorFinal)
-                      )}
+                      {formatDate(o.createdAt)}
+                      {o.status !== "RASCUNHO" &&
+                        ` — ${formatCurrency(
+                          calcOrcamentoTotal(o.itens, o.desconto, o.valorFinal)
+                        )}`}
+                      {o.status === "RASCUNHO" && " — continuar depois"}
                     </p>
                   </div>
                 </div>
@@ -87,10 +96,16 @@ export default function CampoOrcamentosPage() {
                   variant={
                     o.assinaturaCliente || o.status === "APROVADO"
                       ? "success"
-                      : "warning"
+                      : o.status === "RASCUNHO"
+                        ? "default"
+                        : "warning"
                   }
                 >
-                  {o.assinaturaCliente ? "Assinado" : o.status}
+                  {o.assinaturaCliente
+                    ? "Assinado"
+                    : o.status === "RASCUNHO"
+                      ? "Rascunho"
+                      : o.status}
                 </Badge>
               </Card>
             </Link>

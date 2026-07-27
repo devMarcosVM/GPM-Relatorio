@@ -112,6 +112,7 @@ model Orcamento {
   validadeDias   Int             @default(15)
   formaPagamento String?
   observacoes    String?
+  assinaturaTecnico String?
   assinaturaCliente String?
   tokenAssinatura   String?   @unique
   tokenAssinaturaExpira DateTime?
