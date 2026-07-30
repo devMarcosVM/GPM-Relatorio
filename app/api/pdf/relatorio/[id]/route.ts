@@ -27,6 +27,7 @@ export async function GET(
           include: { servico: true, fotos: true },
           orderBy: { ordem: "asc" },
         },
+        anexos: { orderBy: { createdAt: "asc" } },
       },
     }),
     prisma.empresa.findFirst(),

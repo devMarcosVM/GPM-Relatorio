@@ -41,8 +41,17 @@ interface RelatorioPDFProps {
         orientacao: string;
       }>;
     }>;
+    anexos?: Array<{ url: string }>;
   };
   absoluteUrl: (path: string) => string;
+}
+
+function chunk<T>(items: T[], size: number): T[][] {
+  const rows: T[][] = [];
+  for (let i = 0; i < items.length; i += size) {
+    rows.push(items.slice(i, i + size));
+  }
+  return rows;
 }
 
 function getTecnica(item: RelatorioPDFProps["relatorio"]["itens"][number]) {
@@ -57,6 +66,7 @@ export function RelatorioPDF({ empresa, relatorio, absoluteUrl }: RelatorioPDFPr
   const itensComFotos = relatorio.itens.filter(
     (item) => item.fotos.some((f) => f.tipo === "ANTES" || f.tipo === "DEPOIS")
   );
+  const anexos = relatorio.anexos ?? [];
 
   return (
     <Document>
@@ -171,6 +181,24 @@ export function RelatorioPDF({ empresa, relatorio, absoluteUrl }: RelatorioPDFPr
                 </View>
               );
             })}
+          </>
+        )}
+
+        {anexos.length > 0 && (
+          <>
+            <PdfSectionBanner title="FOTOS GERAIS DO SERVIÇO" />
+            {chunk(anexos, 3).map((linha, linhaIdx) => (
+              <View key={linhaIdx} style={pdfStyles.anexoGrid} wrap={false}>
+                {linha.map((anexo, idx) => (
+                  <View key={idx} style={pdfStyles.anexoCell}>
+                    <Image
+                      src={absoluteUrl(anexo.url)}
+                      style={pdfStyles.anexoImage}
+                    />
+                  </View>
+                ))}
+              </View>
+            ))}
           </>
         )}
 

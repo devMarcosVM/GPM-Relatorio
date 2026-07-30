@@ -191,6 +191,22 @@ export const pdfStyles = StyleSheet.create({
     fontSize: 8,
     color: pdfColors.textMuted,
   },
+  anexoGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    marginHorizontal: -4,
+    marginBottom: 6,
+  },
+  anexoCell: {
+    width: "33.333%",
+    padding: 4,
+  },
+  anexoImage: {
+    width: "100%",
+    height: 115,
+    objectFit: "cover" as const,
+    border: `1pt solid ${pdfColors.border}`,
+  },
   metaRow: {
     flexDirection: "row",
     gap: 16,
