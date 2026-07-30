@@ -7,6 +7,16 @@ import {
   relatorioFinalizado,
 } from "@/lib/relatorioAccess";
 
+const relatorioInclude = {
+  cliente: true,
+  tecnico: { select: { id: true, nome: true, email: true } },
+  anexos: { orderBy: { createdAt: "asc" as const } },
+  itens: {
+    include: { servico: true, fotos: true },
+    orderBy: { ordem: "asc" as const },
+  },
+};
+
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -20,14 +30,7 @@ export async function GET(
 
   const relatorio = await prisma.relatorio.findUnique({
     where: { id },
-    include: {
-      cliente: true,
-      tecnico: { select: { id: true, nome: true, email: true } },
-      itens: {
-        include: { servico: true, fotos: true },
-        orderBy: { ordem: "asc" },
-      },
-    },
+    include: relatorioInclude,
   });
 
   if (!relatorio) {
@@ -58,6 +61,8 @@ export async function PUT(
   if (relatorioAcessoNegado(session, access)) {
     return NextResponse.json({ error: "Acesso negado" }, { status: 403 });
   }
+
+  const data = await request.json();
   if (relatorioFinalizado(access)) {
     return NextResponse.json(
       { error: "Relatório finalizado não pode ser editado" },
@@ -65,22 +70,31 @@ export async function PUT(
     );
   }
 
-  const data = await request.json();
-
   const updateData: Record<string, unknown> = {};
-  if (data.enderecoServico !== undefined) updateData.enderecoServico = data.enderecoServico || null;
-  if (data.observacoes !== undefined) updateData.observacoes = data.observacoes || null;
-  if (data.assinaturaTecnico !== undefined) updateData.assinaturaTecnico = data.assinaturaTecnico;
-  if (data.assinaturaCliente !== undefined) updateData.assinaturaCliente = data.assinaturaCliente;
-  if (data.clienteId !== undefined) updateData.clienteId = data.clienteId || null;
+  if (data.enderecoServico !== undefined) {
+    updateData.enderecoServico = data.enderecoServico || null;
+  }
+  if (data.observacoes !== undefined) {
+    updateData.observacoes = data.observacoes || null;
+  }
+  if (data.assinaturaTecnico !== undefined) {
+    updateData.assinaturaTecnico = data.assinaturaTecnico;
+  }
+  if (data.assinaturaCliente !== undefined) {
+    updateData.assinaturaCliente = data.assinaturaCliente;
+  }
+  if (data.clienteId !== undefined) {
+    updateData.clienteId = data.clienteId || null;
+  }
+
+  if (Object.keys(updateData).length === 0) {
+    return NextResponse.json({ error: "Nada para atualizar" }, { status: 400 });
+  }
 
   const relatorio = await prisma.relatorio.update({
     where: { id },
     data: updateData,
-    include: {
-      cliente: true,
-      itens: { include: { servico: true, fotos: true } },
-    },
+    include: relatorioInclude,
   });
 
   return NextResponse.json(relatorio);

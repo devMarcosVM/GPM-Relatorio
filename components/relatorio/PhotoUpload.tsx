@@ -1,8 +1,9 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useState } from "react";
 import imageCompression from "browser-image-compression";
-import { Camera, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
+import { FotoPicker } from "@/components/relatorio/FotoPicker";
 import type { OrientacaoFoto, TipoFoto } from "@/lib/types";
 
 interface PhotoUploadProps {
@@ -19,10 +20,8 @@ export function PhotoUpload({
   tipo,
   orientacao,
   onComplete,
-  label = "Trocar foto",
   className = "",
 }: PhotoUploadProps) {
-  const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
 
@@ -51,36 +50,24 @@ export function PhotoUpload({
       setError("Erro ao enviar foto");
     } finally {
       setUploading(false);
-      if (inputRef.current) inputRef.current.value = "";
     }
   };
 
   return (
     <div className={className}>
-      <input
-        ref={inputRef}
-        type="file"
-        accept="image/jpeg,image/png,image/webp"
-        capture="environment"
-        className="hidden"
-        onChange={(e) => {
-          const file = e.target.files?.[0];
-          if (file) handleFile(file);
-        }}
-      />
-      <button
-        type="button"
-        onClick={() => inputRef.current?.click()}
-        disabled={uploading}
-        className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-white px-3 py-1.5 text-xs font-medium hover:bg-slate-50 disabled:opacity-50"
-      >
-        {uploading ? (
+      {uploading ? (
+        <p className="inline-flex items-center gap-1.5 text-xs text-muted">
           <Loader2 className="h-3.5 w-3.5 animate-spin" />
-        ) : (
-          <Camera className="h-3.5 w-3.5" />
-        )}
-        {uploading ? "Enviando..." : label}
-      </button>
+          Enviando...
+        </p>
+      ) : (
+        <FotoPicker
+          onFile={handleFile}
+          size="sm"
+          cameraLabel="Tirar"
+          anexoLabel="Anexar"
+        />
+      )}
       {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
     </div>
   );

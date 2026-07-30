@@ -12,6 +12,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { PhotoUpload } from "@/components/relatorio/PhotoUpload";
 import { RelatorioItensLeitura } from "@/components/relatorio/RelatorioItensLeitura";
+import { RelatorioAnexosSection } from "@/components/relatorio/RelatorioAnexosSection";
 import { SignaturePad, type SignaturePadRef } from "@/components/SignaturePad";
 import {
   ArrowLeft,
@@ -77,6 +78,7 @@ interface Relatorio {
   } | null;
   tecnico: { nome: string; email: string };
   itens: Item[];
+  anexos?: Array<{ id: string; url: string }>;
 }
 
 export default function AdminRelatorioDetailPage() {
@@ -546,6 +548,12 @@ export default function AdminRelatorioDetailPage() {
           })
         )}
       </div>
+
+      <RelatorioAnexosSection
+        relatorioId={id}
+        anexos={relatorio.anexos || []}
+        onChanged={load}
+      />
 
       {relatorio.status !== "FINALIZADO" && (
         <Card className="space-y-4 border-primary/20 bg-sky-50/50">

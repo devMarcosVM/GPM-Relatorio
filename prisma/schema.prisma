@@ -19,6 +19,7 @@ model User {
   updatedAt      DateTime    @updatedAt
   relatorios     Relatorio[]
   orcamentos     Orcamento[]
+  custos         Custo[]
 }
 
 model Empresa {
@@ -78,8 +79,28 @@ model Relatorio {
   tecnicoId         String
   tecnico           User            @relation(fields: [tecnicoId], references: [id])
   itens             RelatorioItem[]
+  anexos            RelatorioAnexo[]
   createdAt         DateTime        @default(now())
   updatedAt         DateTime        @updatedAt
+}
+
+model Custo {
+  id           String   @id @default(cuid())
+  descricao    String
+  valor        Float
+  data         DateTime @default(now())
+  criadoPorId  String
+  criadoPor    User     @relation(fields: [criadoPorId], references: [id])
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model RelatorioAnexo {
+  id          String    @id @default(cuid())
+  relatorioId String
+  relatorio   Relatorio @relation(fields: [relatorioId], references: [id], onDelete: Cascade)
+  url         String
+  createdAt   DateTime  @default(now())
 }
 
 model RelatorioItem {

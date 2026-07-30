@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import imageCompression from "browser-image-compression";
 import { Button } from "@/components/ui/button";
-import { Camera, RotateCcw, Check, Smartphone } from "lucide-react";
+import { RotateCcw, Check, Smartphone } from "lucide-react";
+import { FotoPicker } from "@/components/relatorio/FotoPicker";
 import type { OrientacaoFoto, TipoFoto } from "@/lib/types";
 
 interface CameraCaptureProps {
@@ -50,29 +51,15 @@ export function CameraCapture({
   onComplete,
   onCancel,
 }: CameraCaptureProps) {
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const openNativeCamera = () => {
-    setError(null);
-    fileInputRef.current?.click();
-  };
-
-  useEffect(() => {
-    // Abre a câmera nativa assim que a tela carrega
-    const timer = setTimeout(() => openNativeCamera(), 150);
-    return () => clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const handleNativePhoto = (file: File) => {
+  const handleFile = (file: File) => {
     setError(null);
     if (preview) URL.revokeObjectURL(preview);
-    const previewUrl = URL.createObjectURL(file);
-    setPreview(previewUrl);
+    setPreview(URL.createObjectURL(file));
     setPendingFile(file);
   };
 
@@ -81,7 +68,6 @@ export function CameraCapture({
     setPreview(null);
     setPendingFile(null);
     setError(null);
-    openNativeCamera();
   };
 
   const confirmUpload = async () => {
@@ -108,19 +94,6 @@ export function CameraCapture({
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-black">
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/*"
-        capture="environment"
-        className="hidden"
-        onChange={(e) => {
-          const file = e.target.files?.[0];
-          if (file) handleNativePhoto(file);
-          e.target.value = "";
-        }}
-      />
-
       <div className="flex items-center justify-between p-4 text-white">
         <button type="button" onClick={onCancel} className="text-sm">
           Cancelar
@@ -151,13 +124,18 @@ export function CameraCapture({
               <strong>{isVertical ? "vertical" : "horizontal"}</strong>
             </p>
             <p className="max-w-xs text-center text-xs text-slate-400">
-              Use a câmera de trás. Se abrir a frontal, toque no ícone de
-              virar câmera no app do celular.
+              Tire a foto com a câmera ou anexe uma imagem do dispositivo.
+              Se a câmera abrir na frontal, use o ícone de virar.
             </p>
-            <Button onClick={openNativeCamera} size="lg">
-              <Camera className="h-5 w-5" />
-              Abrir câmera
-            </Button>
+            <FotoPicker
+              onFile={handleFile}
+              disabled={uploading}
+              layout="stack"
+              size="lg"
+              cameraLabel="Tirar foto"
+              anexoLabel="Anexar do dispositivo"
+              className="w-full max-w-xs"
+            />
           </div>
         )}
 

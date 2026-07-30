@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth";
 import { calcOrcamentoTotal } from "@/lib/orcamento";
+import { calcularLucro, somaCustos } from "@/lib/custos";
 import {
   endOfMonth,
   parseDateEnd,
@@ -23,8 +24,14 @@ export async function GET(request: NextRequest) {
   const from = fromParam ? parseDateStart(fromParam) : startOfMonth();
   const to = toParam ? parseDateEnd(toParam) : endOfMonth(new Date());
 
-  const [relatorios, orcamentos, novosClientes, recentRelatorios, recentOrcamentos] =
-    await Promise.all([
+  const [
+    relatorios,
+    orcamentos,
+    custos,
+    novosClientes,
+    recentRelatorios,
+    recentOrcamentos,
+  ] = await Promise.all([
       prisma.relatorio.findMany({
         where: {
           status: "FINALIZADO",
@@ -39,6 +46,10 @@ export async function GET(request: NextRequest) {
         },
         include: { itens: true, cliente: { select: { nome: true } } },
         orderBy: { createdAt: "desc" },
+      }),
+      prisma.custo.findMany({
+        where: { data: { gte: from, lte: to } },
+        orderBy: { data: "desc" },
       }),
       prisma.cliente.count({
         where: { createdAt: { gte: from, lte: to } },
@@ -77,6 +88,9 @@ export async function GET(request: NextRequest) {
       0
     );
 
+  const gastosServicos = somaCustos(custos);
+  const lucroServicos = calcularLucro(receitaAprovada, gastosServicos);
+
   return NextResponse.json({
     periodo: {
       from: from.toISOString(),
@@ -89,6 +103,8 @@ export async function GET(request: NextRequest) {
     orcamentosPendentes: orcamentos.filter((o) => o.status === "PENDENTE").length,
     receitaAprovada,
     receitaPotencial,
+    gastosServicos,
+    lucroServicos,
     novosClientes,
     recentRelatorios: recentRelatorios.map((r) => ({
       id: r.id,

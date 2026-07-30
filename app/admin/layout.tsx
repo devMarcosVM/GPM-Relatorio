@@ -14,6 +14,7 @@ import {
   LogOut,
   Menu,
   X,
+  WalletCards,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { EmpresaSetupBanner } from "@/components/empresa/EmpresaSetupBanner";
@@ -25,6 +26,7 @@ const navItems = [
   { href: "/admin/catalogo", label: "Catálogo", icon: Wrench },
   { href: "/admin/relatorios", label: "Relatórios", icon: FileText },
   { href: "/admin/orcamentos", label: "Orçamentos", icon: Receipt },
+  { href: "/admin/custos", label: "Custos", icon: WalletCards },
   { href: "/admin/configuracoes", label: "Configurações", icon: Settings },
 ];
 
@@ -85,10 +87,6 @@ export default function AdminLayout({
         }
       });
   }, [router]);
-
-  useEffect(() => {
-    setMenuOpen(false);
-  }, [pathname]);
 
   useEffect(() => {
     if (!menuOpen) return;

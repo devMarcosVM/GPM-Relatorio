@@ -4,7 +4,15 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
-import { FileText, Receipt, LogOut, ChevronRight, Calculator, UserPlus } from "lucide-react";
+import {
+  FileText,
+  Receipt,
+  LogOut,
+  ChevronRight,
+  Calculator,
+  UserPlus,
+  WalletCards,
+} from "lucide-react";
 
 export default function CampoHomePage() {
   const router = useRouter();
@@ -71,6 +79,21 @@ export default function CampoHomePage() {
                   <p className="text-lg font-semibold">Novo cliente</p>
                   <p className="text-sm text-muted">
                     Cadastrar para usar em relatório ou orçamento
+                  </p>
+                </div>
+                <ChevronRight className="h-5 w-5 text-muted" />
+              </Card>
+            </Link>
+
+            <Link href="/campo/custos">
+              <Card className="flex items-center gap-4 p-5 hover:border-primary transition-colors cursor-pointer">
+                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-orange-100 text-orange-700">
+                  <WalletCards className="h-7 w-7" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-lg font-semibold">Custos</p>
+                  <p className="text-sm text-muted">
+                    Registrar gasolina, ajudante e outros gastos
                   </p>
                 </div>
                 <ChevronRight className="h-5 w-5 text-muted" />

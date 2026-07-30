@@ -12,6 +12,8 @@ import {
   Wrench,
   DollarSign,
   CheckCircle2,
+  TrendingUp,
+  Wallet,
 } from "lucide-react";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { defaultMonthRange } from "@/lib/adminFilters";
@@ -25,6 +27,8 @@ interface DashboardStats {
   orcamentosPendentes: number;
   receitaAprovada: number;
   receitaPotencial: number;
+  gastosServicos: number;
+  lucroServicos: number;
   novosClientes: number;
   recentRelatorios: Array<{
     id: string;
@@ -83,6 +87,20 @@ export default function DashboardPage() {
           color: "text-green-600 bg-green-100",
         },
         {
+          label: "Gastos do serviço",
+          value: formatCurrency(stats.gastosServicos ?? 0),
+          hint: "Custos lançados no período",
+          icon: Wallet,
+          color: "text-amber-600 bg-amber-100",
+        },
+        {
+          label: "Lucro final",
+          value: formatCurrency(stats.lucroServicos ?? 0),
+          hint: "Receita vinculada − gastos",
+          icon: TrendingUp,
+          color: "text-emerald-600 bg-emerald-100",
+        },
+        {
           label: "Novos clientes",
           value: String(stats.novosClientes),
           hint: "Cadastrados no período",
@@ -94,7 +112,7 @@ export default function DashboardPage() {
           value: formatCurrency(stats.receitaPotencial),
           hint: `${stats.orcamentosPendentes} aguardando resposta`,
           icon: Receipt,
-          color: "text-amber-600 bg-amber-100",
+          color: "text-orange-600 bg-orange-100",
         },
       ]
     : [];
@@ -141,7 +159,7 @@ export default function DashboardPage() {
         <Card className="py-10 text-center text-muted">Carregando...</Card>
       ) : (
         <>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {cards.map((card) => {
               const Icon = card.icon;
               return (

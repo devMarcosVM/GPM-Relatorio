@@ -27,6 +27,7 @@ import { toAssetPath } from "@/lib/assetUrl";
 import { buildAssinaturaWhatsAppMessage } from "@/lib/assinaturaLink";
 import { telefoneParaWhatsApp } from "@/lib/documentosBr";
 import { RelatorioItensLeitura } from "@/components/relatorio/RelatorioItensLeitura";
+import { RelatorioAnexosSection } from "@/components/relatorio/RelatorioAnexosSection";
 
 interface Cliente {
   id: string;
@@ -66,6 +67,7 @@ interface Relatorio {
   tokenAssinatura?: string | null;
   cliente: Cliente | null;
   itens: Item[];
+  anexos?: Array<{ id: string; url: string }>;
 }
 
 export default function RelatorioDetailPage() {
@@ -369,6 +371,12 @@ export default function RelatorioDetailPage() {
               );
             })}
 
+            <RelatorioAnexosSection
+              relatorioId={id}
+              anexos={relatorio.anexos || []}
+              onChanged={load}
+            />
+
             <Button className="w-full" size="lg" onClick={() => setStep("finalizar")}>
               Continuar — Finalizar Relatório
             </Button>
@@ -458,6 +466,13 @@ export default function RelatorioDetailPage() {
               enderecoServico={relatorio.enderecoServico}
               observacoes={relatorio.observacoes}
             />
+
+            <RelatorioAnexosSection
+              relatorioId={id}
+              anexos={relatorio.anexos || []}
+              onChanged={load}
+            />
+
           <Card className="space-y-4 text-center">
             <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
               <Check className="h-8 w-8 text-green-600" />
