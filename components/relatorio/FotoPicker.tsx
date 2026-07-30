@@ -13,6 +13,8 @@ interface FotoPickerProps {
   anexoLabel?: string;
   size?: "sm" | "md" | "lg";
   layout?: "row" | "stack";
+  /** Em fundos escuros (ex.: tela de câmera), deixa o botão de anexar legível */
+  tone?: "light" | "dark";
 }
 
 export function FotoPicker({
@@ -20,9 +22,10 @@ export function FotoPicker({
   disabled,
   className,
   cameraLabel = "Tirar foto",
-  anexoLabel = "Anexar",
+  anexoLabel = "Anexar do dispositivo",
   size = "md",
   layout = "row",
+  tone = "light",
 }: FotoPickerProps) {
   const cameraRef = useRef<HTMLInputElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -71,7 +74,12 @@ export function FotoPicker({
         size={size}
         disabled={disabled}
         onClick={() => fileRef.current?.click()}
-        className={layout === "stack" ? "w-full" : undefined}
+        className={cn(
+          layout === "stack" ? "w-full" : undefined,
+          tone === "dark"
+            ? "border-2 border-sky-300 bg-slate-900 text-white hover:bg-slate-800 hover:text-white"
+            : "text-slate-900"
+        )}
       >
         <ImagePlus className="h-4 w-4" />
         {anexoLabel}

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
 import { Pencil, Plus, Trash2, WalletCards } from "lucide-react";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
@@ -19,11 +20,28 @@ interface Custo {
   };
 }
 
+const CUSTO_OPCOES = [
+  "Gasolina",
+  "Ajudante",
+  "Alimentação",
+  "Manutenção",
+] as const;
+
+const OUTRO = "outro";
+
 const today = () => new Date().toISOString().slice(0, 10);
+
+function resolverTipo(descricao: string): string {
+  const match = CUSTO_OPCOES.find(
+    (opcao) => opcao.toLowerCase() === descricao.trim().toLowerCase()
+  );
+  return match ?? OUTRO;
+}
 
 export function CustosManager({ isAdmin = false }: { isAdmin?: boolean }) {
   const [custos, setCustos] = useState<Custo[]>([]);
-  const [descricao, setDescricao] = useState("");
+  const [tipo, setTipo] = useState<string>(CUSTO_OPCOES[0]);
+  const [outroDescricao, setOutroDescricao] = useState("");
   const [valor, setValor] = useState("");
   const [data, setData] = useState(today());
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -53,8 +71,12 @@ export function CustosManager({ isAdmin = false }: { isAdmin?: boolean }) {
     [custos]
   );
 
+  const descricaoFinal =
+    tipo === OUTRO ? outroDescricao.trim() : tipo;
+
   const resetForm = () => {
-    setDescricao("");
+    setTipo(CUSTO_OPCOES[0]);
+    setOutroDescricao("");
     setValor("");
     setData(today());
     setEditingId(null);
@@ -64,8 +86,12 @@ export function CustosManager({ isAdmin = false }: { isAdmin?: boolean }) {
   const save = async () => {
     setError("");
     const parsedValue = Number(valor.replace(",", "."));
-    if (!descricao.trim()) {
-      setError("Informe a descrição do custo");
+    if (!descricaoFinal) {
+      setError(
+        tipo === OUTRO
+          ? "Descreva o outro custo"
+          : "Selecione o tipo de custo"
+      );
       return;
     }
     if (!Number.isFinite(parsedValue) || parsedValue < 0) {
@@ -80,7 +106,7 @@ export function CustosManager({ isAdmin = false }: { isAdmin?: boolean }) {
         method: editingId ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          descricao: descricao.trim(),
+          descricao: descricaoFinal,
           valor: parsedValue,
           data,
         }),
@@ -99,8 +125,10 @@ export function CustosManager({ isAdmin = false }: { isAdmin?: boolean }) {
   };
 
   const edit = (custo: Custo) => {
+    const tipoResolvido = resolverTipo(custo.descricao);
     setEditingId(custo.id);
-    setDescricao(custo.descricao);
+    setTipo(tipoResolvido);
+    setOutroDescricao(tipoResolvido === OUTRO ? custo.descricao : "");
     setValor(String(custo.valor).replace(".", ","));
     setData(new Date(custo.data).toISOString().slice(0, 10));
     setError("");
@@ -131,7 +159,7 @@ export function CustosManager({ isAdmin = false }: { isAdmin?: boolean }) {
         <p className="mt-1 text-sm text-muted">
           {isAdmin
             ? "Registre e acompanhe os gastos operacionais."
-            : "Registre gasolina, ajudante, descarte e outros gastos."}
+            : "Registre gasolina, ajudante, alimentação, manutenção e outros gastos."}
         </p>
       </div>
 
@@ -141,13 +169,37 @@ export function CustosManager({ isAdmin = false }: { isAdmin?: boolean }) {
         </h2>
         <div className="grid gap-3 sm:grid-cols-3">
           <div className="sm:col-span-3">
-            <label className="mb-1 block text-sm font-medium">Descrição *</label>
-            <Input
-              value={descricao}
-              onChange={(event) => setDescricao(event.target.value)}
-              placeholder="Ex.: Gasolina, funcionário extra, descarte"
-            />
+            <label className="mb-1 block text-sm font-medium">Tipo de custo *</label>
+            <Select
+              value={tipo}
+              onChange={(event) => {
+                setTipo(event.target.value);
+                if (event.target.value !== OUTRO) setOutroDescricao("");
+              }}
+            >
+              {CUSTO_OPCOES.map((opcao) => (
+                <option key={opcao} value={opcao}>
+                  {opcao}
+                </option>
+              ))}
+              <option value={OUTRO}>Outro custo</option>
+            </Select>
           </div>
+
+          {tipo === OUTRO && (
+            <div className="sm:col-span-3">
+              <label className="mb-1 block text-sm font-medium">
+                Descreva o custo *
+              </label>
+              <Input
+                value={outroDescricao}
+                onChange={(event) => setOutroDescricao(event.target.value)}
+                placeholder="Ex.: Pedágio, estacionamento, material..."
+                autoFocus
+              />
+            </div>
+          )}
+
           <div>
             <label className="mb-1 block text-sm font-medium">Valor *</label>
             <Input
@@ -169,7 +221,7 @@ export function CustosManager({ isAdmin = false }: { isAdmin?: boolean }) {
             <Button
               className="w-full"
               onClick={save}
-              disabled={saving || !descricao.trim()}
+              disabled={saving || !descricaoFinal}
             >
               <Plus className="h-4 w-4" />
               {saving

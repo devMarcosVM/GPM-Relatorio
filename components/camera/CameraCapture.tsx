@@ -132,6 +132,7 @@ export function CameraCapture({
               disabled={uploading}
               layout="stack"
               size="lg"
+              tone="dark"
               cameraLabel="Tirar foto"
               anexoLabel="Anexar do dispositivo"
               className="w-full max-w-xs"
@@ -157,7 +158,11 @@ export function CameraCapture({
       <div className="flex justify-center gap-4 p-6">
         {preview && !uploading && (
           <>
-            <Button variant="outline" onClick={retake}>
+            <Button
+              variant="outline"
+              onClick={retake}
+              className="border-2 border-white bg-slate-900 text-white hover:bg-slate-800"
+            >
               <RotateCcw className="h-4 w-4" />
               Refazer
             </Button>
