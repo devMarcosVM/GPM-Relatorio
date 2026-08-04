@@ -38,6 +38,13 @@ interface Cliente {
   nome: string;
 }
 
+interface Usuario {
+  id: string;
+  nome: string;
+  email: string;
+  role: string;
+}
+
 interface Servico {
   id: string;
   nome: string;
@@ -77,7 +84,7 @@ interface Relatorio {
     telefone?: string | null;
     email?: string | null;
   } | null;
-  tecnico: { nome: string; email: string };
+  tecnico: { id: string; nome: string; email: string };
   itens: Item[];
   anexos?: Array<{ id: string; url: string }>;
 }
@@ -87,6 +94,7 @@ export default function AdminRelatorioDetailPage() {
   const router = useRouter();
   const [relatorio, setRelatorio] = useState<Relatorio | null>(null);
   const [clientes, setClientes] = useState<Cliente[]>([]);
+  const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [servicos, setServicos] = useState<Servico[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -98,6 +106,7 @@ export default function AdminRelatorioDetailPage() {
   const [assinaturaCliente, setAssinaturaCliente] = useState<string | null>(null);
 
   const [clienteId, setClienteId] = useState("");
+  const [tecnicoId, setTecnicoId] = useState("");
   const [enderecoServico, setEnderecoServico] = useState("");
   const [observacoes, setObservacoes] = useState("");
   const [selectedServico, setSelectedServico] = useState("");
@@ -106,19 +115,23 @@ export default function AdminRelatorioDetailPage() {
   const assinaturaClienteRef = useRef<SignaturePadRef>(null);
 
   const load = useCallback(async () => {
-    const [rRes, cRes, sRes] = await Promise.all([
+    const [rRes, cRes, sRes, uRes] = await Promise.all([
       fetch(`/api/relatorios/${id}`),
       fetch("/api/clientes"),
       fetch("/api/catalogo"),
+      fetch("/api/usuarios"),
     ]);
     const data = await rRes.json();
     const c = await cRes.json();
     const s = await sRes.json();
+    const u = await uRes.json();
 
     setRelatorio(data);
     setClientes(c);
     setServicos(s);
+    setUsuarios(Array.isArray(u) ? u : []);
     setClienteId(data.clienteId || data.cliente?.id || "");
+    setTecnicoId(data.tecnico?.id || "");
     setEnderecoServico(data.enderecoServico || "");
     setObservacoes(data.observacoes || "");
 
@@ -141,6 +154,7 @@ export default function AdminRelatorioDetailPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         clienteId: clienteId || null,
+        tecnicoId,
         enderecoServico,
         observacoes,
       }),
@@ -359,12 +373,33 @@ export default function AdminRelatorioDetailPage() {
       <Card className="space-y-3">
         <h2 className="font-semibold flex items-center gap-2">
           <User className="h-4 w-4" />
-          Registrado por
+          Técnico responsável
         </h2>
-        <p className="text-sm">
-          {relatorio.tecnico.nome}{" "}
-          <span className="text-muted">({relatorio.tecnico.email})</span>
-        </p>
+        {editavel ? (
+          <div>
+            <label className="mb-1 block text-sm font-medium">
+              Quem verá este relatório no campo
+            </label>
+            <Select
+              value={tecnicoId}
+              onChange={(e) => setTecnicoId(e.target.value)}
+            >
+              {usuarios
+                .filter((u) => u.role === "TECNICO" || u.role === "ADMIN")
+                .map((u) => (
+                  <option key={u.id} value={u.id}>
+                    {u.nome} ({u.email})
+                    {u.role === "ADMIN" ? " — Admin" : ""}
+                  </option>
+                ))}
+            </Select>
+          </div>
+        ) : (
+          <p className="text-sm">
+            {relatorio.tecnico.nome}{" "}
+            <span className="text-muted">({relatorio.tecnico.email})</span>
+          </p>
+        )}
       </Card>
 
       <Card className="space-y-4">

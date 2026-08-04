@@ -87,6 +87,32 @@ export async function PUT(
     updateData.clienteId = data.clienteId || null;
   }
 
+  if (data.tecnicoId !== undefined) {
+    if (session.role !== "ADMIN") {
+      return NextResponse.json(
+        { error: "Apenas admin pode alterar o técnico responsável" },
+        { status: 403 }
+      );
+    }
+    if (!data.tecnicoId || typeof data.tecnicoId !== "string") {
+      return NextResponse.json(
+        { error: "Técnico responsável inválido" },
+        { status: 400 }
+      );
+    }
+    const tecnico = await prisma.user.findUnique({
+      where: { id: data.tecnicoId },
+      select: { id: true, role: true },
+    });
+    if (!tecnico || (tecnico.role !== "TECNICO" && tecnico.role !== "ADMIN")) {
+      return NextResponse.json(
+        { error: "Usuário não encontrado ou sem permissão para ser responsável" },
+        { status: 400 }
+      );
+    }
+    updateData.tecnicoId = tecnico.id;
+  }
+
   if (Object.keys(updateData).length === 0) {
     return NextResponse.json({ error: "Nada para atualizar" }, { status: 400 });
   }
