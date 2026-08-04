@@ -1,14 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth";
-
-async function getNextNumero() {
-  const last = await prisma.relatorio.findFirst({
-    orderBy: { numero: "desc" },
-    select: { numero: true },
-  });
-  return (last?.numero ?? 0) + 1;
-}
+import { getNextNumeroRelatorio } from "@/lib/relatorioNumero";
 
 export async function GET(request: NextRequest) {
   const session = await getSession();
@@ -42,7 +35,7 @@ export async function POST(request: NextRequest) {
 
   const relatorio = await prisma.relatorio.create({
     data: {
-      numero: await getNextNumero(),
+      numero: await getNextNumeroRelatorio(),
       clienteId: data.clienteId || null,
       tecnicoId: session.id,
       enderecoServico: data.enderecoServico || null,

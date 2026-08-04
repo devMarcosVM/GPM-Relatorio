@@ -21,6 +21,7 @@ import {
   Download,
   Trash2,
   MessageCircle,
+  Copy,
 } from "lucide-react";
 import type { OrientacaoFoto, TipoFoto } from "@/lib/types";
 import { toAssetPath } from "@/lib/assetUrl";
@@ -91,6 +92,7 @@ export default function RelatorioDetailPage() {
   const [observacoes, setObservacoes] = useState("");
   const [error, setError] = useState("");
   const [finalizando, setFinalizando] = useState(false);
+  const [duplicando, setDuplicando] = useState(false);
   const assinaturaTecnicoRef = useRef<SignaturePadRef>(null);
   const assinaturaClienteRef = useRef<SignaturePadRef>(null);
 
@@ -196,6 +198,26 @@ export default function RelatorioDetailPage() {
     router.push("/campo/relatorios");
   };
 
+  const duplicarRelatorio = async () => {
+    if (
+      !confirm(
+        "Duplicar este relatório? Será criado um novo rascunho com os mesmos serviços, fotos e anexos."
+      )
+    ) {
+      return;
+    }
+    setDuplicando(true);
+    const res = await fetch(`/api/relatorios/${id}/duplicar`, { method: "POST" });
+    setDuplicando(false);
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      alert(data.error || "Erro ao duplicar");
+      return;
+    }
+    const novo = await res.json();
+    router.push(`/campo/relatorio/${novo.id}`);
+  };
+
   const shareWhatsApp = () => {
     if (!relatorio?.cliente) return;
     const phone = relatorio.cliente.telefone
@@ -265,6 +287,15 @@ export default function RelatorioDetailPage() {
         <Badge variant={relatorio.status === "FINALIZADO" ? "success" : "warning"}>
           {relatorio.status === "FINALIZADO" ? "Finalizado" : "Rascunho"}
         </Badge>
+        <button
+          type="button"
+          onClick={duplicarRelatorio}
+          disabled={duplicando}
+          className="text-slate-600 disabled:opacity-50"
+          aria-label="Duplicar relatório"
+        >
+          <Copy className="h-5 w-5" />
+        </button>
         <button
           type="button"
           onClick={excluirRelatorio}
@@ -502,6 +533,15 @@ export default function RelatorioDetailPage() {
                   O cliente assina pelo link — sem precisar de login.
                 </p>
               )}
+              <Button
+                className="w-full"
+                variant="outline"
+                onClick={duplicarRelatorio}
+                disabled={duplicando}
+              >
+                <Copy className="h-4 w-4" />
+                {duplicando ? "Duplicando..." : "Duplicar relatório"}
+              </Button>
               <Button variant="ghost" onClick={() => router.push("/campo/relatorios")}>
                 Voltar aos Relatórios
               </Button>

@@ -26,6 +26,7 @@ import {
   Pencil,
   Check,
   MessageCircle,
+  Copy,
 } from "lucide-react";
 import { formatDateTime } from "@/lib/utils";
 import { toAssetPath } from "@/lib/assetUrl";
@@ -91,6 +92,7 @@ export default function AdminRelatorioDetailPage() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [finalizando, setFinalizando] = useState(false);
+  const [duplicando, setDuplicando] = useState(false);
   const [finalizeError, setFinalizeError] = useState("");
   const [assinaturaTecnico, setAssinaturaTecnico] = useState<string | null>(null);
   const [assinaturaCliente, setAssinaturaCliente] = useState<string | null>(null);
@@ -181,6 +183,26 @@ export default function AdminRelatorioDetailPage() {
     if (!confirm("Excluir este relatório?")) return;
     await fetch(`/api/relatorios/${id}`, { method: "DELETE" });
     router.push("/admin/relatorios");
+  };
+
+  const duplicarRelatorio = async () => {
+    if (
+      !confirm(
+        "Duplicar este relatório? Será criado um novo rascunho com os mesmos serviços, fotos e anexos."
+      )
+    ) {
+      return;
+    }
+    setDuplicando(true);
+    const res = await fetch(`/api/relatorios/${id}/duplicar`, { method: "POST" });
+    setDuplicando(false);
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      alert(data.error || "Erro ao duplicar");
+      return;
+    }
+    const novo = await res.json();
+    router.push(`/admin/relatorios/${novo.id}`);
   };
 
   const finalizar = async () => {
@@ -319,6 +341,15 @@ export default function AdminRelatorioDetailPage() {
               )}
             </>
           )}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={duplicarRelatorio}
+            disabled={duplicando}
+          >
+            <Copy className="h-4 w-4" />
+            {duplicando ? "Duplicando..." : "Duplicar"}
+          </Button>
           <Button variant="danger" size="sm" onClick={removeRelatorio}>
             <Trash2 className="h-4 w-4" />
           </Button>
